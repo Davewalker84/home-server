@@ -20,6 +20,7 @@ Home Assistant ist auf folgende Container angewiesen, die separat in Portainer l
 
 | Container / Stack | Funktion | Typ |
 |---|---|---|
+| `mosquitto` | MQTT-Broker (HCPBridge, IoT-Geräte) | Portainer Stack |
 | `matter-server` | Matter-Protokoll-Bridge (Wibutler) | Portainer Stack |
 | `eufy-security-ws` | Lokale Eufy-Kamera-Anbindung | Portainer Container |
 | `go2rtc` | Kamera-Stream-Relay | Portainer Container |
@@ -86,6 +87,27 @@ Eufy E340
 `eufy-security-ws` stellt die lokale Verbindung zur Kamera her und umgeht die Eufy-Cloud. `go2rtc` transkodiert den RTSP-Stream in ein HA-kompatibles Format.
 
 > **Bekannte Schwäche:** Eufy-Firmware-Updates können die lokale API von `eufy-security-ws` brechen. Nach jedem Kamera-Firmware-Update den Container-Status und den Live-Stream in HA prüfen.
+
+---
+
+### MQTT – Hörmann Garagentor & IoT-Geräte
+
+**Typ:** Portainer Stack `mosquitto`  
+**Broker:** Eclipse Mosquitto  
+**Port:** 1883 (MQTT), 9001 (WebSocket)
+
+```
+Home Assistant (MQTT-Integration)
+    └── mosquitto (MQTT-Broker, Portainer Stack)
+            └── HCPBridge (Hörmann ProMatic 4)
+            └── künftige MQTT-Geräte (Sensoren, ESP32, etc.)
+```
+
+Mosquitto verwaltet alle MQTT-Verbindungen. Die HCPBridge publiziert Tor-Zustände (offen/geschlossen, Position) und empfängt Befehle (öffnen/schließen/stopp). Home Assistant abonniert diese Meldungen via MQTT Auto-Discovery.
+
+> **Hinweis:** Mosquitto ist **notwendig** für HCPBridge. Andere HA-Integrationen (Matter, OCPP, Eufy) sind unabhängig davon.
+
+Details: Siehe [mosquitto.md](mosquitto.md) und [Hardware/garagentor.md](../Hardware/garagentor.md).
 
 ---
 

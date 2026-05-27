@@ -24,6 +24,7 @@ flowchart TB
             HA["Home Assistant"]
             MS["matter-server"]
             JF["Jellyfin"]
+            MQ["Mosquitto (MQTT)\nEclipse · :1883"]
             WY["Wyoming (Test)\nWhisper · Piper"]
         end
         subgraph PCONT["Portainer · Container"]
@@ -43,6 +44,7 @@ flowchart TB
         ID7["VW ID.7"]
         CAM["Eufy E340\nGarage"]
         EPSON["Epson WF-3825"]
+        GARAGENTOR["Hörmann Garagentor\nProMatic 4 · HCPBridge"]
     end
 
     subgraph BACKUP["Backup"]
@@ -63,6 +65,8 @@ flowchart TB
     MS -->|Matter| WB
     WB --> LIGHTS
     WB --> SENS
+    HA -->|MQTT| MQ
+    GARAGENTOR -->|MQTT| MQ
     HA -->|OCPP via HACS| WALLBOX
     WALLBOX --- ID7
     CAM -->|RTSP via Repeater| EUFY
