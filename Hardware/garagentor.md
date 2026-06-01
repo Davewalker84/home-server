@@ -101,6 +101,7 @@ oder über die IP-Adresse (nachschlagen in der FritzBox unter Heimnetz → Netzw
 **Ursache:** Schwaches WLAN-Signal zwischen HCPBridge und Repeater/FritzBox.
 
 **Lösungen:**
+- Sicherung Garage raus und wieder rein damit MPC Bridge wieder sendet, vorher checken ob erreichbar im Heimnetz
 - Fritz Repeater näher ans Tor rücken oder zusätzlichen Repeater einbauen
 - Tynet-Firmware zu ESPHome-Firmware wechseln (bessere WLAN-Stabilität)
 - MQTT-Broker-Netzwerklatenz prüfen (Mosquitto-Container-Logs)
