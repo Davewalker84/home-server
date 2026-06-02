@@ -53,6 +53,7 @@ flowchart TB
         ID7["VW ID.7"]
         CAM["Eufy E340\nGarage"]
         EPSON["Epson WF-3825"]
+        SMGW["Smart Meter Gateway\nEMH · NetzeBW HAN\nIPv6 · Digest Auth"]
     end
 
     subgraph BACKUP["Backup"]
@@ -79,6 +80,7 @@ flowchart TB
     EUFY --> GO2
     GO2 -->|Stream| HA
     EPSON -->|Scan| PL
+    SMGW -->|REST Digest / HAN| HA
 
     PL <--> V1
     PL <--> V2
@@ -114,6 +116,7 @@ flowchart TB
 | UGREEN DXP4800 | 192.168.188.130 | DHCP-Reservierung (FritzBox) |
 | Synology DS218J | 192.168.188.135 | DHCP-Reservierung (FritzBox) |
 | Wibutler Pro 2nd Gen | — | DHCP (direkt an FritzBox) |
+| Smart Meter Gateway (EMH) | `2003:de:9f37:1c00:215:3bff:fee4:1f5c` | IPv6-only, kein DHCP/IPv4 |
 
 ---
 

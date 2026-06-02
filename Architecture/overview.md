@@ -104,6 +104,19 @@ Home Assistant → matter-server → Wibutler (Matter Bridge) → Geräte
 
 Die Wallbox kommuniziert direkt mit Home Assistant über das **OCPP-Protokoll** (Open Charge Point Protocol) via HACS-Integration. Kein Zwischensystem, kein Cloud-Account des Herstellers notwendig.
 
+### Smart Meter Gateway (EMH / NetzeBW HAN)
+
+Das SMGW von NetzeBW stellt über seinen **HAN-Port** (Home Area Network) eine lokale HTTPS-API bereit. Home Assistant liest die Daten direkt per REST-Sensor mit HTTP Digest Auth – vollständig lokal, ohne Cloud, ohne TRuDI.
+
+```
+Home Assistant (REST smgw_sensor.yaml)
+    └── HTTPS Digest Auth → EMH SMGW (HAN-Port, IPv6, Switch)
+```
+
+Die IPv6-Adresse des Gateways wird direkt verwendet, da Docker-Container den Hostnamen `eemh0015438871` nicht über das lokale DNS auflösen können. Das Poll-Intervall ist auf 15 Minuten gesetzt (NetzeBW-Empfehlung).
+
+---
+
 ### Eufy E340 Kamera (Garage)
 
 Da die Eufy-Cloud-Integration datenschutztechnisch ungünstig ist, läuft die Einbindung vollständig lokal:

@@ -45,6 +45,7 @@ flowchart TB
         CAM["Eufy E340\nGarage"]
         EPSON["Epson WF-3825"]
         GARAGENTOR["Hörmann Garagentor\nProMatic 4 · HCPBridge"]
+        SMGW["Smart Meter Gateway\nEMH · NetzeBW HAN\nIPv6 · Digest Auth"]
     end
 
     subgraph BACKUP["Backup"]
@@ -73,6 +74,7 @@ flowchart TB
     EUFY --> GO2
     GO2 -->|Stream| HA
     EPSON -->|Scan| PL
+    SMGW -->|REST Digest / HAN| HA
 
     PL <--> V1
     PL <--> V2

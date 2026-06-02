@@ -106,6 +106,20 @@ Alternativ werden Dokumente über die Paperless-App oder per Smartphone-Scan ein
 
 ---
 
+## Smart Meter Gateway (EMH / NetzeBW)
+
+**Anschluss:** LAN via Switch (HAN-Schnittstelle)  
+**Hostname:** `eemh0015438871` · **IPv6:** `2003:de:9f37:1c00:215:3bff:fee4:1f5c`  
+**Integration:** REST-Sensor in Home Assistant (Digest Auth, 15-Minuten-Intervall)
+
+Das SMGW wird von NetzeBW betrieben und stellt über die HAN-Schnittstelle lokale Verbrauchsdaten bereit. Home Assistant liest die Daten direkt per HTTPS-API – ohne Cloud, ohne TRuDI.
+
+Verfügbare Messwerte: Zählerstand Bezug/Einspeisung, Wirkleistung, Spannung und Strom auf allen drei Phasen, Netzfrequenz.
+
+→ Vollständige Dokumentation: [Hardware/smartmeter.md](smartmeter.md)
+
+---
+
 ## Buderus Lüftungsanlage
 
 **Anschluss:** LAN via Switch  

@@ -111,6 +111,45 @@ Details: Siehe [mosquitto.md](mosquitto.md) und [Hardware/garagentor.md](../Hard
 
 ---
 
+### Smart Meter Gateway (EMH / NetzeBW HAN)
+
+**Typ:** Native REST-Integration (kein HACS)  
+**Protokoll:** HTTPS mit HTTP Digest Auth  
+**Endpunkt:** `https://[2003:de:9f37:1c00:215:3bff:fee4:1f5c]/json/realtimedata`
+
+```
+Home Assistant (REST-Sensor, smgw_sensor.yaml)
+    └── HTTPS Digest Auth → Smart Meter Gateway (HAN-Port)
+                                └── EMH eemh0015438871 (NetzeBW SMGW)
+```
+
+Die Konfiguration liegt in `smgw_sensor.yaml`, eingebunden via `rest: !include smgw_sensor.yaml` in `configuration.yaml`.
+
+#### Sensoren
+
+| Entität | Beschreibung | Einheit |
+|---|---|---|
+| `sensor.smartmeter_bezug_gesamt` | Zählerstand Netzbezug | kWh |
+| `sensor.smartmeter_einspeisung_gesamt` | Zählerstand Einspeisung (PV) | kWh |
+| `sensor.smartmeter_wirkleistung` | Aktuelle Wirkleistung | W |
+| `sensor.smartmeter_netzfrequenz` | Netzfrequenz | Hz |
+| `sensor.smartmeter_spannung_l1` | Spannung Phase L1 | V |
+| `sensor.smartmeter_spannung_l2` | Spannung Phase L2 | V |
+| `sensor.smartmeter_spannung_l3` | Spannung Phase L3 | V |
+| `sensor.smartmeter_strom_l1` | Strom Phase L1 | A |
+| `sensor.smartmeter_strom_l2` | Strom Phase L2 | A |
+| `sensor.smartmeter_strom_l3` | Strom Phase L3 | A |
+
+Für das **Energy Dashboard:** Einstellungen → Energie → Netzbezug: `sensor.smartmeter_bezug_gesamt`.
+
+> **Hinweis:** `scan_interval` ist auf 900 s (15 Minuten) gesetzt. NetzeBW empfiehlt kein kürzeres Intervall – zu häufiges Polling kann das SMGW sperren.
+
+> **Bekannte Schwäche:** Der Docker-Container kann den Hostnamen `eemh0015438871` nicht über AdGuard Home / FritzBox auflösen. Die IPv6-Adresse ist daher hardcodiert. Bei Adressänderung (z.B. SMGW-Tausch durch NetzeBW) muss `smgw_sensor.yaml` manuell aktualisiert werden.
+
+Details: Siehe [Hardware/smartmeter.md](../Hardware/smartmeter.md)
+
+---
+
 ### Wyoming – Spracherkennung / TTS
 
 **Typ:** Portainer Stack `wyoming`  

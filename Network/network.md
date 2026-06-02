@@ -86,6 +86,7 @@ Zwei 8-Port-Switches (unmanaged) verteilen das LAN im Haus. Da sie unmanaged sin
 | LAN-Dosen (alle Räume) | Wanddosen für kabelgebundene Geräte |
 | Buderus Lüftungsanlage | Gebäudetechnik |
 | Repeater Garage | WLAN-Versorgung Garage → Eufy E340 Kamera |
+| Smart Meter Gateway (EMH) | HAN-Schnittstelle, IPv6-only, kein DHCP/IPv4 |
 
 > Der **Wibutler Pro** ist direkt an der FritzBox angeschlossen, nicht über die Switches.
 
@@ -93,6 +94,12 @@ Zwei 8-Port-Switches (unmanaged) verteilen das LAN im Haus. Da sie unmanaged sin
 
 - **Keine VLANs ⚠️:** IoT-Geräte (Buderus, Wallbox, Wibutler) befinden sich im selben Netz wie Server und Clients. Eine Kompromittierung eines IoT-Geräts hätte direkten Zugriff auf alle anderen Geräte. Akzeptiertes Risiko bei aktuellem Aufwand.
 - **Keine redundante Uplink-Verkabelung:** Fällt ein Switch aus, sind alle daran hängenden Geräte offline.
+
+### Smart Meter Gateway – IPv6-Sonderfall
+
+Das EMH SMGW (NetzeBW HAN) nutzt ausschließlich IPv6 und erhält vom FritzBox-DHCP keine IPv4-Adresse. Im Heimnetz und im Browser ist es über den Hostnamen `eemh0015438871` erreichbar. Home Assistant läuft jedoch in einem Docker-Container, der den Hostnamen nicht über AdGuard Home / FritzBox auflösen kann.
+
+**Workaround:** Die IPv6-Adresse `2003:de:9f37:1c00:215:3bff:fee4:1f5c` wird direkt in `smgw_sensor.yaml` als Endpunkt eingetragen.
 
 ---
 
