@@ -54,6 +54,7 @@ flowchart TB
         CAM["Eufy E340\nGarage"]
         EPSON["Epson WF-3825"]
         SMGW["Smart Meter Gateway\nEMH · NetzeBW HAN\nIPv6 · Digest Auth"]
+        KLIMA["Mitsubishi Electric\nMXZ-2F53VF4 (Multi-Split)\nMSZ-AY20VGKP Wohnzimmer\nMSZ-AY35VGKP Büro"]
     end
 
     subgraph BACKUP["Backup"]
@@ -81,6 +82,7 @@ flowchart TB
     GO2 -->|Stream| HA
     EPSON -->|Scan| PL
     SMGW -->|REST Digest / HAN| HA
+    HA <-->|MELCloud API (HACS)| KLIMA
 
     PL <--> V1
     PL <--> V2

@@ -120,6 +120,40 @@ Verfügbare Messwerte: Zählerstand Bezug/Einspeisung, Wirkleistung, Spannung un
 
 ---
 
+## Mitsubishi Electric Klimaanlage (Multi-Split)
+
+**System:** 1 Außengerät + 2 Innengeräte (Multi-Split R32)  
+**Integration:** MELCloud Home (HACS, Custom Integration von Andrew-Blake) via MELCloud Cloud-API
+
+### Geräte
+
+| Typ | Modell | Raum | HA-Entität |
+|---|---|---|---|
+| Innengerät | MSZ-AY20VGKP | Wohnzimmer (EG) | `climate.melcloudhome_1b7f_0270_climate` |
+| Innengerät | MSZ-AY35VGKP | Büro (DG) | `climate.melcloudhome_d64c_5427_climate` |
+| Außengerät | MXZ-2F53VF4 | Außen (Multi-Split) | — |
+
+### Integrations-Pipeline
+
+```
+Home Assistant (MELCloud Home HACS)
+    └── MELCloud Cloud-API (Internet)
+            └── Mitsubishi Electric MXZ-2F53VF4 (Außengerät)
+                    ├── MSZ-AY20VGKP (Wohnzimmer)
+                    └── MSZ-AY35VGKP (Büro)
+```
+
+### Nachlüften-Automatisierung
+
+Nach mindestens 30 Minuten Betrieb im Heiz-/Kühlmodus wird beim Ausschalten automatisch ein 10-minütiger **fan_only**-Lauf gestartet, damit Kondenswasser aus dem Innengerät trocknet. Währenddessen ist der AUS-Button im Dashboard gesperrt (`input_boolean.nachluften_*_aktiv`). Nach Ablauf schaltet sich das Gerät selbstständig aus. Beide Bewohner erhalten eine Push-Benachrichtigung.
+
+### Bekannte Schwächen
+
+- **Cloud-Abhängigkeit ⚠️:** Die Integration läuft über die Mitsubishi MELCloud Cloud-API. Ist das Internet oder die MELCloud nicht erreichbar, ist keine Steuerung über Home Assistant möglich. Das Gerät selbst läuft weiter und ist per Fernbedienung bedienbar.
+- **Polling-Latenz:** Statusupdates kommen mit einigen Sekunden Verzögerung durch die Cloud-Kommunikation.
+
+---
+
 ## Buderus Lüftungsanlage
 
 **Anschluss:** LAN via Switch  

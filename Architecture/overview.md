@@ -100,6 +100,22 @@ Home Assistant kommuniziert ausschließlich über das **Matter-Protokoll** mit d
 Home Assistant → matter-server → Wibutler (Matter Bridge) → Geräte
 ```
 
+### Mitsubishi Electric Klimaanlage (MELCloud Home)
+
+Home Assistant steuert das Multi-Split-System (Außengerät MXZ-2F53VF4, Innengeräte in Wohnzimmer und Büro) über die **MELCloud Home HACS-Integration** von Andrew-Blake. Die Kommunikation läuft über die Mitsubishi MELCloud Cloud-API – als einzige Smarthome-Integration im Setup ist dies **nicht lokal**.
+
+```
+Home Assistant (MELCloud Home HACS)
+    └── MELCloud Cloud-API (Internet)
+            └── Mitsubishi Electric MXZ-2F53VF4
+                    ├── MSZ-AY20VGKP (Wohnzimmer)
+                    └── MSZ-AY35VGKP (Büro)
+```
+
+> **Bewusster Kompromiss:** Eine lokale Steuerung wäre mit Mitsubishi CN105-Adapter möglich, wurde aber zugunsten der einfacheren Cloud-Integration nicht umgesetzt.
+
+---
+
 ### Huawei Wallbox (OCPP)
 
 Die Wallbox kommuniziert direkt mit Home Assistant über das **OCPP-Protokoll** (Open Charge Point Protocol) via HACS-Integration. Kein Zwischensystem, kein Cloud-Account des Herstellers notwendig.

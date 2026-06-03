@@ -150,6 +150,37 @@ Details: Siehe [Hardware/smartmeter.md](../Hardware/smartmeter.md)
 
 ---
 
+### MELCloud Home – Mitsubishi Electric Klimaanlage
+
+**Typ:** HACS Custom Integration (Andrew-Blake / melcloudhome)  
+**Protokoll:** MELCloud Cloud-API (Internet)  
+**System:** Multi-Split · 1 Außengerät (MXZ-2F53VF4) · 2 Innengeräte
+
+```
+Home Assistant (MELCloud Home HACS)
+    └── MELCloud Cloud-API (Internet)
+            └── MXZ-2F53VF4 (Außengerät)
+                    ├── MSZ-AY20VGKP → climate.melcloudhome_1b7f_0270_climate (Wohnzimmer)
+                    └── MSZ-AY35VGKP → climate.melcloudhome_d64c_5427_climate (Büro)
+```
+
+#### Nachlüften-Automatisierung
+
+Nach ≥ 30 Minuten Betrieb in heat/cool/dry/auto schaltet HA beim Ausschalten automatisch in `fan_only` (10 Minuten), damit Kondenswasser aus dem Innengerät trocknet. Steuerung über:
+
+| Helfer | Funktion |
+|---|---|
+| `input_boolean.nachluften_wohnzimmer_aktiv` | Sperrt AUS-Button während Nachlüften aktiv |
+| `input_boolean.nachluften_buro_aktiv` | Sperrt AUS-Button während Nachlüften aktiv |
+| `timer.nachluften_wohnzimmer` | 10-Minuten-Timer, danach automatisch AUS |
+| `timer.nachluften_buro` | 10-Minuten-Timer, danach automatisch AUS |
+
+Push-Benachrichtigung an beide Bewohner beim Start des Nachlüftens.
+
+> **Bekannte Schwäche:** Die Steuerung ist cloud-abhängig. Bei Ausfall von Internet oder MELCloud ist keine HA-Steuerung möglich. Das Gerät läuft weiter und ist per Fernbedienung bedienbar.
+
+---
+
 ### Wyoming – Spracherkennung / TTS
 
 **Typ:** Portainer Stack `wyoming`  
@@ -171,6 +202,7 @@ HACS ist installiert und wird für die OCPP-Wallbox-Integration genutzt.
 | Integration | Zweck |
 |---|---|
 | OCPP | Huawei Smart Charger Anbindung |
+| MELCloud Home | Mitsubishi Electric Klimaanlage (Andrew-Blake) |
 
 ---
 
