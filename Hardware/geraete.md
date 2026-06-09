@@ -106,15 +106,30 @@ Alternativ werden Dokumente über die Paperless-App oder per Smartphone-Scan ein
 
 ---
 
+## Hichi IR-Lesekopf (Energiezähler)
+
+**Geräte:** 2× Hichi WiFi IR-Lesekopf V2 (Tasmota, ESP32C3)  
+**Protokoll:** MQTT (anonym, kein User/PW) → Mosquitto → Home Assistant  
+**IPs:** 192.168.188.145 (Zähler 1646) · 192.168.188.146 (Zähler 1634)
+
+| Zähler | Bezeichnung | MQTT Topic |
+|---|---|---|
+| 1APA011601**1646** | Allgemein (Hauptstrom) | `tele/hichi_1646/SENSOR` |
+| 1APA011601**1634** | Heizung | `tele/hichi_1634/SENSOR` |
+
+Die Leseköpfe senden per Tasmota SML-Script alle Zählerdaten (Bezug, Einspeisung, Leistung, Spannung L1–L3, Strom L1–L3, Frequenz) via MQTT. Phasendaten erfordern PIN-Aktivierung am Zähler (PIN kommt per Post von NetzeBW).
+
+→ Vollständige Dokumentation: [Hardware/hichi.md](hichi.md)
+
+---
+
 ## Smart Meter Gateway (EMH / NetzeBW)
+
+> ⚠️ **Nicht mehr im Dashboard.** Das SMGW ist noch physisch angeschlossen und erreichbar, wird aber nicht mehr für das Energie-Dashboard genutzt (HAN-Schnittstelle funktioniert nicht zuverlässig). Energiedaten kommen jetzt von den Hichi IR-Leseköpfen.
 
 **Anschluss:** LAN via Switch (HAN-Schnittstelle)  
 **Hostname:** `eemh0015438871` · **IPv6:** `2003:de:9f37:1c00:215:3bff:fee4:1f5c`  
-**Integration:** REST-Sensor in Home Assistant (Digest Auth, 15-Minuten-Intervall)
-
-Das SMGW wird von NetzeBW betrieben und stellt über die HAN-Schnittstelle lokale Verbrauchsdaten bereit. Home Assistant liest die Daten direkt per HTTPS-API – ohne Cloud, ohne TRuDI.
-
-Verfügbare Messwerte: Zählerstand Bezug/Einspeisung, Wirkleistung, Spannung und Strom auf allen drei Phasen, Netzfrequenz.
+**Integration:** REST-Sensor in Home Assistant (konfiguriert, aber deaktiviert)
 
 → Vollständige Dokumentation: [Hardware/smartmeter.md](smartmeter.md)
 

@@ -21,9 +21,10 @@ Zentraler Message-Broker für MQTT-basierte Geräteintegration. Alle MQTT-Client
 Mosquitto ist optional, aber **notwendig für:**
 
 - HCPBridge Garagentor (Hörmann ProMatic 4)
-- Beliebige künftige MQTT-Geräte (ESP32, Sensoren, Smart-Home-Gadgets)
+- Hichi IR-Lesekopf 1646 (IP 192.168.188.145) → Zähler Allgemein/Hauptstrom
+- Hichi IR-Lesekopf 1634 (IP 192.168.188.146) → Zähler Heizung
 
-Ohne Mosquitto funktioniert die HCPBridge nicht. Alle anderen HA-Integrationen (Matter, OCPP, Eufy, Wyoming) laufen unabhängig davon.
+Ohne Mosquitto funktionieren HCPBridge und Hichi-Energiemessung nicht. Alle anderen HA-Integrationen (Matter, OCPP, Eufy, Wyoming) laufen unabhängig davon.
 
 ---
 
@@ -61,13 +62,19 @@ volumes:
 
 ```
 listener 1883
-allow_anonymous false
-password_file /mosquitto/config/passwd
+allow_anonymous true
+
+listener 9883
+protocol http_api
+http_dir /usr/share/mosquitto/dashboard
+
 persistence true
 persistence_location /mosquitto/data/
 log_dest file /mosquitto/log/mosquitto.log
 log_dest stdout
 ```
+
+> **Hinweis:** Anonymer Zugriff ist aktiviert (`allow_anonymous true`), da die Hichi IR-Leseköpfe (Tasmota) keine MQTT-Credentials unterstützen. Mosquitto ist ausschließlich im lokalen Heimnetz erreichbar – Port 1883 ist nicht nach außen exponiert. Port 9883 stellt ein internes HTTP-Dashboard bereit.
 
 ---
 
@@ -79,28 +86,13 @@ log_dest stdout
 - YAML einfügen (siehe oben)
 - Deploy
 
-### 2. Passwort setzen (Ersteinrichtung)
+### 2. Konfigurationsdatei prüfen
 
-Der Standard-Benutzer ist `mqttuser`. Passwort setzen:
-
-```bash
-docker exec -it mosquitto sh
-```
-
-In der Container-Shell:
+Nach dem ersten Deploy die `mosquitto.conf` im Volume prüfen und ggf. anpassen (siehe Konfigurationsdatei oben). Container danach neu starten:
 
 ```bash
-mosquitto_passwd -c /mosquitto/config/passwd mqttuser
-```
-
-Passwort zweimal eingeben (min. 16 Zeichen, mit Sonderzeichen), dann:
-
-```bash
-exit
 docker restart mosquitto
 ```
-
-> **Hinweis:** Falls `sh` in Portainer nicht funktioniert: Command-Feld auf `/bin/sh` ändern statt `/bin/bash`.
 
 ---
 
@@ -114,10 +106,9 @@ HA muss Mosquitto als MQTT-Integration kennen, damit MQTT-Geräte Auto-Discovery
 - Einstellungen → Geräte & Dienste
 - Integration hinzufügen → MQTT
 - Eintragen:
-  - **Broker:** IP des Servers (z.B. 192.168.188.130)
+  - **Broker:** 192.168.188.130
   - **Port:** 1883
-  - **Username:** mqttuser
-  - **Password:** Das oben gesetzte Passwort
+  - **Username/Password:** leer lassen (anonym)
 
 Nach erfolgreicher Verbindung zeigt HA „MQTT" unter Geräte & Dienste.
 
@@ -129,10 +120,21 @@ HCPBridge sendet Tor-Zustände per MQTT an Mosquitto. HA empfängt diese Meldung
 
 | Feld | Wert |
 |---|---|
-| MQTT Server | IP des HA-Servers (z.B. 192.168.188.130) |
+| MQTT Server | 192.168.188.130 |
 | MQTT Port | 1883 |
-| MQTT User | mqttuser |
-| MQTT Password | Das gesetzte Passwort |
+| MQTT User | leer |
+| MQTT Password | leer |
+
+### Hichi IR-Lesekopf (Energiezähler)
+
+Die Hichi-Geräte verbinden sich anonym mit Mosquitto und senden Zählerdaten per Tasmota-MQTT.
+
+| Gerät | IP | MQTT Topic |
+|---|---|---|
+| Hichi 1646 (Haushalt) | 192.168.188.145 | `tele/hichi_1646/SENSOR` |
+| Hichi 1634 (Heizung) | 192.168.188.146 | `tele/hichi_1634/SENSOR` |
+
+Details: Siehe [Hardware/hichi.md](../Hardware/hichi.md)
 
 ---
 
@@ -193,9 +195,9 @@ Typisch **~20–50 MB RAM** bei moderater Aktivität (10–50 aktive Clients). B
 
 ### Authentifizierung
 
-- ✅ `allow_anonymous false` — nur authentifizierte Clients dürfen verbinden
-- ✅ Dedizierter `mqttuser` für HCPBridge (nicht Admin-Account)
-- ✅ Starkes Passwort setzen (min. 16 Zeichen)
+- ⚠️ `allow_anonymous true` — alle Clients im Heimnetz dürfen sich ohne Credentials verbinden
+- Begründung: Hichi IR-Leseköpfe (Tasmota) unterstützen MQTT-Credentials, aber die Konfiguration wurde für maximale Kompatibilität auf anonym gestellt
+- Mosquitto ist **ausschließlich lokal** erreichbar — Port 1883 nicht nach außen exponiert
 
 ### Netzwerk-Scoping
 

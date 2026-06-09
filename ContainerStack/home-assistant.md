@@ -111,40 +111,50 @@ Details: Siehe [mosquitto.md](mosquitto.md) und [Hardware/garagentor.md](../Hard
 
 ---
 
-### Smart Meter Gateway (EMH / NetzeBW HAN)
+### Hichi IR-Lesekopf – Energiezähler (MQTT)
 
-**Typ:** Native REST-Integration (kein HACS)  
-**Protokoll:** HTTPS mit HTTP Digest Auth  
-**Endpunkt:** `https://[2003:de:9f37:1c00:215:3bff:fee4:1f5c]/json/realtimedata`
+**Typ:** MQTT-Integration (native HA, kein HACS)  
+**Protokoll:** MQTT via Mosquitto, anonym  
+**Geräte:** 2× Hichi WiFi IR-Lesekopf V2 (Tasmota 14.6.0.2, ESP32C3)
 
 ```
-Home Assistant (REST-Sensor, smgw_sensor.yaml)
-    └── HTTPS Digest Auth → Smart Meter Gateway (HAN-Port)
-                                └── EMH eemh0015438871 (NetzeBW SMGW)
+Home Assistant (MQTT-Integration)
+    └── mosquitto (MQTT-Broker)
+            ├── hichi_1646 (IP 192.168.188.145) → Zähler 1646 Allgemein/Hauptstrom
+            └── hichi_1634 (IP 192.168.188.146) → Zähler 1634 Heizung
 ```
 
-Die Konfiguration liegt in `smgw_sensor.yaml`, eingebunden via `rest: !include smgw_sensor.yaml` in `configuration.yaml`.
+Die Konfiguration liegt in `configuration.yaml` unter dem `mqtt: sensor:` Block.
 
 #### Sensoren
 
 | Entität | Beschreibung | Einheit |
 |---|---|---|
-| `sensor.smartmeter_bezug_gesamt` | Zählerstand Netzbezug | kWh |
-| `sensor.smartmeter_einspeisung_gesamt` | Zählerstand Einspeisung (PV) | kWh |
-| `sensor.smartmeter_wirkleistung` | Aktuelle Wirkleistung | W |
-| `sensor.smartmeter_netzfrequenz` | Netzfrequenz | Hz |
-| `sensor.smartmeter_spannung_l1` | Spannung Phase L1 | V |
-| `sensor.smartmeter_spannung_l2` | Spannung Phase L2 | V |
-| `sensor.smartmeter_spannung_l3` | Spannung Phase L3 | V |
-| `sensor.smartmeter_strom_l1` | Strom Phase L1 | A |
-| `sensor.smartmeter_strom_l2` | Strom Phase L2 | A |
-| `sensor.smartmeter_strom_l3` | Strom Phase L3 | A |
+| `sensor.hichi_1646_verbrauch_gesamt` | Zählerstand Netzbezug (Haushalt) | kWh |
+| `sensor.hichi_1646_einspeisung_gesamt` | Zählerstand Einspeisung | kWh |
+| `sensor.hichi_1646_wirkleistung` | Aktuelle Wirkleistung (Haushalt) | W |
+| `sensor.hichi_1646_spannung_l1/l2/l3` | Spannung pro Phase | V |
+| `sensor.hichi_1646_strom_l1/l2/l3` | Strom pro Phase | A |
+| `sensor.hichi_1646_frequenz` | Netzfrequenz | Hz |
+| `sensor.hichi_1634_verbrauch_gesamt` | Zählerstand Netzbezug (Heizung) | kWh |
+| `sensor.hichi_1634_wirkleistung` | Aktuelle Wirkleistung (Heizung) | W |
+| *(analog L1–L3, Frequenz für 1634)* | | |
 
-Für das **Energy Dashboard:** Einstellungen → Energie → Netzbezug: `sensor.smartmeter_bezug_gesamt`.
+> **Hinweis:** Phasendaten (Spannung, Strom, Leistung, Frequenz) zeigen 0, bis der NetzeBW-PIN am Zähler aktiviert ist. Bezug (`E_in`) und Einspeisung (`E_out`) funktionieren ohne PIN.
 
-> **Hinweis:** `scan_interval` ist auf 900 s (15 Minuten) gesetzt. NetzeBW empfiehlt kein kürzeres Intervall – zu häufiges Polling kann das SMGW sperren.
+> **Wallbox:** Die Huawei SCharger-22KT hängt physisch am Zähler 1646. Ihr Verbrauch ist bereits in `sensor.hichi_1646_verbrauch_gesamt` enthalten.
 
-> **Bekannte Schwäche:** Der Docker-Container kann den Hostnamen `eemh0015438871` nicht über AdGuard Home / FritzBox auflösen. Die IPv6-Adresse ist daher hardcodiert. Bei Adressänderung (z.B. SMGW-Tausch durch NetzeBW) muss `smgw_sensor.yaml` manuell aktualisiert werden.
+Details: Siehe [Hardware/hichi.md](../Hardware/hichi.md)
+
+---
+
+### Smart Meter Gateway (EMH / NetzeBW HAN)
+
+> ⚠️ **Nicht mehr im Dashboard.** Das SMGW ist weiterhin physisch angeschlossen und konfiguriert, wird aber nicht mehr aktiv genutzt. Die Energiedaten kommen jetzt von den Hichi IR-Leseköpfen, da die HAN-Schnittstelle nicht zuverlässig funktioniert.
+
+**Typ:** Native REST-Integration (kein HACS)  
+**Protokoll:** HTTPS mit HTTP Digest Auth  
+**Endpunkt:** `https://[2003:de:9f37:1c00:215:3bff:fee4:1f5c]/json/realtimedata`
 
 Details: Siehe [Hardware/smartmeter.md](../Hardware/smartmeter.md)
 

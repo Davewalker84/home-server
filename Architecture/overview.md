@@ -120,16 +120,30 @@ Home Assistant (MELCloud Home HACS)
 
 Die Wallbox kommuniziert direkt mit Home Assistant über das **OCPP-Protokoll** (Open Charge Point Protocol) via HACS-Integration. Kein Zwischensystem, kein Cloud-Account des Herstellers notwendig.
 
+### Hichi IR-Lesekopf – Energiezähler
+
+Zwei Hichi WiFi IR-Leseköpfe (Tasmota, ESP32C3) lesen die Stromzähler per Infrarot aus und senden die Daten via MQTT an Mosquitto. Home Assistant empfängt die Werte über native MQTT-Sensoren.
+
+```
+Home Assistant (MQTT-Sensoren, configuration.yaml)
+    └── mosquitto (MQTT-Broker)
+            ├── hichi_1646 (192.168.188.145) → Zähler 1646 Allgemein/Hauptstrom
+            └── hichi_1634 (192.168.188.146) → Zähler 1634 Heizung
+```
+
+Der Vorteil gegenüber der SMGW HAN-Schnittstelle: Echtzeit-Updates (statt 15-Minuten-Polling), einfache Tasmota-Konfiguration, keine IPv6-Problematik.
+
+> **Phasendaten (PIN):** Spannung, Strom und Leistung auf L1–L3 sind erst nach PIN-Aktivierung am Zähler verfügbar (PIN kommt per Post von NetzeBW).
+
+Details: Siehe [Hardware/hichi.md](../Hardware/hichi.md)
+
+---
+
 ### Smart Meter Gateway (EMH / NetzeBW HAN)
 
-Das SMGW von NetzeBW stellt über seinen **HAN-Port** (Home Area Network) eine lokale HTTPS-API bereit. Home Assistant liest die Daten direkt per REST-Sensor mit HTTP Digest Auth – vollständig lokal, ohne Cloud, ohne TRuDI.
+> ⚠️ **Nicht mehr aktiv.** Das SMGW ist physisch angeschlossen, wird aber nicht mehr genutzt (HAN-Schnittstelle nicht zuverlässig). Energiedaten kommen von den Hichi IR-Leseköpfen.
 
-```
-Home Assistant (REST smgw_sensor.yaml)
-    └── HTTPS Digest Auth → EMH SMGW (HAN-Port, IPv6, Switch)
-```
-
-Die IPv6-Adresse des Gateways wird direkt verwendet, da Docker-Container den Hostnamen `eemh0015438871` nicht über das lokale DNS auflösen können. Das Poll-Intervall ist auf 15 Minuten gesetzt (NetzeBW-Empfehlung).
+Details: Siehe [Hardware/smartmeter.md](../Hardware/smartmeter.md)
 
 ---
 

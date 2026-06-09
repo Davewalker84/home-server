@@ -1,5 +1,7 @@
 # Smart Meter Gateway (EMH / NetzeBW HAN)
 
+> ⚠️ **Nicht aktiv genutzt.** Das SMGW ist weiterhin physisch angeschlossen und im Netz erreichbar, wird aber nicht mehr im Home Assistant Dashboard verwendet. Die Energiedaten werden stattdessen über die [Hichi IR-Leseköpfe](hichi.md) bezogen, da die HAN-Schnittstelle nicht zuverlässig funktioniert. Diese Dokumentation bleibt als Referenz erhalten.
+
 Dokumentation des Smart Meter Gateways (SMGW) von NetzeBW, eingebunden über die lokale HAN-Schnittstelle.
 
 ---
