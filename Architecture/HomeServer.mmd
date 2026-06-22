@@ -29,6 +29,8 @@ flowchart LR
             JF["Jellyfin :8096"]
             MQ["Mosquitto (MQTT)\nEclipse · :1883"]
             WY["Wyoming (Test)\nWhisper · Piper"]
+            OWU["Open Web UI :3001"]
+            SRX["SearXNG :8080 (intern)"]
         end
         subgraph PCONT["Portainer · Container"]
             EUFY["eufy-security-ws"]
@@ -51,6 +53,11 @@ flowchart LR
         KLIMA["Mitsubishi Electric\nMXZ-2F53VF4 Multi-Split\nMSZ-AY20 Wohnzimmer · MSZ-AY35 Büro"]
     end
 
+    subgraph MACMINI["Mac Mini M4 · Apple M4 · 24 GB · 192.168.188.151"]
+        direction TB
+        OLLAMA["Ollama :11434\nqwen3:14b · qwen3:8b\nqwen2.5-coder:14b · nomic-embed-text"]
+    end
+
     subgraph BACKUP["Backup"]
         SYN["Synology DS218J · 192.168.188.135\nRsync · Montag · 1h"]
     end
@@ -64,6 +71,11 @@ flowchart LR
     FB --> SW
     SW --> NAS
     SW --> SYN
+    SW --> MACMINI
+
+    %% KI-Stack
+    OWU -->|Ollama API :11434| OLLAMA
+    OWU --> SRX
 
     %% Portainer Management
     PT -->|verwaltet| PSTACK

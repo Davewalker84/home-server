@@ -179,6 +179,18 @@ Die Lüftungsanlage ist zwar im Netzwerk, wird aber ausschließlich über ihre e
 
 ---
 
+## Mac Mini M4 (KI-Server)
+
+**IP:** `192.168.188.151` (DHCP-Reservierung in FritzBox)  
+**Rolle:** Dedizierter LLM-Inferenz-Server (Ollama), 24/7 Headless  
+**Chip:** Apple M4 · 24 GB Unified Memory
+
+Betreibt Ollama mit den Modellen qwen3:14b, qwen3:8b, qwen2.5-coder:14b und nomic-embed-text. Open Web UI auf dem NAS nutzt den Mac Mini als Inferenz-Backend.
+
+→ Vollständige Dokumentation: [Hardware/mac-mini-m4.md](mac-mini-m4.md)
+
+---
+
 ## Synology DS218J (Backup-NAS)
 
 → Vollständige Dokumentation in [backup/strategie.md](../backup/strategie.md)

@@ -35,6 +35,8 @@ flowchart TB
             MS["matter-server"]
             JF["Jellyfin :8096"]
             WY["Wyoming (Test)\nWhisper · Piper"]
+            OWU["Open Web UI :3001"]
+            SRX["SearXNG :8080 (intern)"]
         end
         subgraph PCONT["Portainer · Container"]
             EUFY["eufy-security-ws"]
@@ -57,6 +59,10 @@ flowchart TB
         KLIMA["Mitsubishi Electric\nMXZ-2F53VF4 (Multi-Split)\nMSZ-AY20VGKP Wohnzimmer\nMSZ-AY35VGKP Büro"]
     end
 
+    subgraph MACMINI["Mac Mini M4 · Apple M4 · 24 GB · 192.168.188.151"]
+        OLLAMA["Ollama :11434\nqwen3:14b · qwen3:8b\nqwen2.5-coder:14b · nomic-embed-text"]
+    end
+
     subgraph BACKUP["Backup"]
         SYN["Synology DS218J · 192.168.188.135\nRsync · Montag · 1h"]
     end
@@ -67,6 +73,10 @@ flowchart TB
     FB --> SWITCHES
     SWITCHES --> NAS
     SWITCHES --> SYN
+    SWITCHES --> MACMINI
+
+    OWU -->|Ollama API :11434| OLLAMA
+    OWU --> SRX
 
     PT -->|verwaltet| PSTACK
     PT -->|verwaltet| PCONT
@@ -102,6 +112,8 @@ flowchart TB
 | Paperless-NGX | http://192.168.188.130:8000 | UGREEN DXP4800 | UGOS Docker |
 | AdGuard Home | http://192.168.188.130:8080 | UGREEN DXP4800 | Portainer Stack |
 | Jellyfin | http://192.168.188.130:8096 | UGREEN DXP4800 | Portainer Stack |
+| Open Web UI | http://192.168.188.130:3001 | UGREEN DXP4800 | Portainer Stack (ai-stack) |
+| SearXNG | http://192.168.188.130:8080 (intern) | UGREEN DXP4800 | Portainer Stack (ai-stack) |
 | Synology DSM | http://192.168.188.135:5000 | Synology DS218J | — |
 | FritzBox | http://192.168.188.1 | FritzBox 7530 AX | — |
 
@@ -116,6 +128,7 @@ flowchart TB
 |---|---|---|
 | FritzBox 7530 AX | 192.168.188.1 | statisch (Router) |
 | UGREEN DXP4800 | 192.168.188.130 | DHCP-Reservierung (FritzBox) |
+| Mac Mini M4 | 192.168.188.151 | DHCP-Reservierung (FritzBox) |
 | Synology DS218J | 192.168.188.135 | DHCP-Reservierung (FritzBox) |
 | Wibutler Pro 2nd Gen | — | DHCP (direkt an FritzBox) |
 | Smart Meter Gateway (EMH) | `2003:de:9f37:1c00:215:3bff:fee4:1f5c` | IPv6-only, kein DHCP/IPv4 |
@@ -168,4 +181,4 @@ homeserver-docs/
 - **Kein Cloud-Backup** – die Synology DS218J ist das einzige Backup-Ziel. Bei Totalausfall beider NAS gibt es keinen weiteren Restore-Pfad.
 - **Wibutler ist Single Point of Failure** für alle Smarthome-Geräte. Fällt er aus, ist die Matter-Bridge unterbrochen und Home Assistant verliert die Kontrolle über Lichter und Sensoren.
 - **Wyoming (Whisper + Piper)** läuft als Testumgebung ohne aktive HA-Integration.
-- **Ollama** ist installiert aber inaktiv – kein Modell in produktivem Einsatz.
+- **Ollama** läuft aktiv auf dem Mac Mini M4 (192.168.188.151) – Modelle: qwen3:14b, qwen3:8b, qwen2.5-coder:14b, nomic-embed-text.

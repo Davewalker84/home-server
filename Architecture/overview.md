@@ -10,7 +10,7 @@ Das Setup folgt drei Grundsätzen:
 
 **Lokal first.** Alle Daten, Dienste und Automatisierungen laufen im Heimnetz – keine Abhängigkeit von Cloud-Diensten für den Kernbetrieb. Home Assistant, Paperless-NGX und Jellyfin funktionieren auch ohne Internetzugang.
 
-**Ein NAS, ein Betriebszentrum.** Der UGREEN DXP4800 ist das einzige aktive Server-System. Alle Docker-Container laufen dort. Das reduziert Komplexität und Stromverbrauch im Vergleich zu mehreren spezialisierten Geräten.
+**Ein NAS, ein Betriebszentrum – mit Ausnahme für KI.** Der UGREEN DXP4800 ist das primäre Server-System; alle Docker-Container laufen dort. Als bewusste Ausnahme betreibt der **Mac Mini M4** (192.168.188.151) die LLM-Inferenz: Der N100 ist für diese Aufgabe ungeeignet, Apple Silicon mit Unified Memory hingegen ideal. Der Mac Mini ist ausschließlich für Ollama zuständig – keine weiteren Dienste.
 
 **Remote-Zugriff nur über VPN.** Kein Service ist direkt aus dem Internet erreichbar. WireGuard auf der FritzBox ist der einzige Eingangspunkt von außen.
 
@@ -85,6 +85,31 @@ Auf dem UGREEN laufen Container auf zwei Arten:
 - eufy-security-ws, go2rtc
 
 Portainer bietet Stack-Management via `docker-compose`-Dateien, einfacheres Update-Management und eine bessere Übersicht. Paperless-NGX wurde bewusst nicht migriert, da der bestehende UGOS-Stack stabil läuft.
+
+### Mac Mini M4 (KI-Server)
+
+Apple M4, 24 GB Unified Memory, 24/7 Headless-Betrieb. Das Unified Memory teilen sich CPU und GPU – effizient für LLM-Inferenz, da Modellgewichte nicht zwischen CPU- und GPU-RAM hin- und herkopiert werden müssen.
+
+**Rolle:** Dedizierter Ollama-Inferenz-Server. Alle KI-Anfragen im Heimnetz laufen hier auf.
+
+```
+Open Web UI (NAS, :3001)  →  Ollama :11434 (Mac Mini M4)
+VS Code / Continue        →  Ollama :11434 (Mac Mini M4)
+Paperless-AI (geplant)    →  Ollama :11434 (Mac Mini M4)
+```
+
+**Modelle und RAM-Planung (24 GB):**
+
+| Modell | Größe (Q4) | Use-Case |
+|---|---|---|
+| qwen3:14b | ~8 GB | Familien-Chat, Dokument-RAG |
+| qwen3:8b | ~5 GB | Schnelle Fragen, Paperless-AI |
+| qwen2.5-coder:14b | ~8 GB | Coding (VS Code / Continue) |
+| nomic-embed-text | ~0,3 GB | Embeddings (RAG) |
+
+Ollama entlädt Modelle nach 5 Minuten Inaktivität (`OLLAMA_KEEP_ALIVE=5m`). Zwei große 14B-Modelle werden nie gleichzeitig geladen.
+
+Details: Siehe [Hardware/mac-mini-m4.md](../Hardware/mac-mini-m4.md)
 
 ---
 
@@ -188,4 +213,6 @@ Empfehlung für die Zukunft: Kritische Daten (Paperless-Archiv) zusätzlich vers
 | Dienst | Status | Hinweis |
 |---|---|---|
 | Wyoming (Whisper + Piper) | Test | Spracherkennung und TTS für HA – noch keine aktive Integration |
-| Ollama | Inaktiv | Lokales LLM – kein Modell im produktiven Einsatz |
+| Ollama | Aktiv (Mac Mini M4) | Läuft auf 192.168.188.151:11434 – qwen3:14b, qwen3:8b, qwen2.5-coder:14b, nomic-embed-text |
+| Open Web UI | Aktiv (NAS :3001) | Familien-Chat, Web-Suche via SearXNG, Dokument-RAG |
+| SearXNG | Aktiv (NAS, intern) | Anonyme Websuche für Open Web UI – kein direkter Zugriff von außen |
