@@ -2605,7 +2605,7 @@ engines:
   - name: braveapi
     engine: braveapi
     # read https://docs.searxng.org/dev/engines/online/brave.html
-    api_key: "BSAc9-s9mFbC_cq8QKEy2C7XPGqh4gx"
+    api_key: "API KEY EINFÜLLEN"
     inactive: false
     weight: 3
 
