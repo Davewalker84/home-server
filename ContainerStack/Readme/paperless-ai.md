@@ -63,8 +63,8 @@ services:
       - OLLAMA_API_URL=http://192.168.188.151:11434
       - OLLAMA_MODEL=qwen3:8b
 
-      # Verarbeitungsplan (alle 30 Minuten)
-      - SCAN_INTERVAL=*/30 * * * *
+      # Verarbeitungsplan (täglich 02:00 Uhr nachts)
+      - SCAN_INTERVAL=0 2 * * *
 
       # Bereits klassifizierte Dokumente nicht erneut verarbeiten
       - PROCESS_PREDEFINED_DOCUMENTS=no
@@ -96,7 +96,7 @@ services:
 | `AI_PROVIDER` | `ollama` | Lokale Inferenz, kein Cloud-Dienst |
 | `OLLAMA_API_URL` | `http://192.168.188.151:11434` | Ollama auf Mac Mini M4 |
 | `OLLAMA_MODEL` | `qwen3:8b` | Schnell, ausreichend für Klassifizierung |
-| `SCAN_INTERVAL` | `*/30 * * * *` | Alle 30 Minuten neue Dokumente prüfen |
+| `SCAN_INTERVAL` | `0 2 * * *` | Täglich um 02:00 Uhr nachts |
 | `PROCESS_PREDEFINED_DOCUMENTS` | `no` | Bereits getaggte Dokumente überspringen |
 | `ADD_AI_PROCESSED_TAG` | `yes` | Verarbeitete Dokumente mit `ai-processed` markieren |
 | `API_KEY` | `<passwort>` | Schützt die Web UI vor unbefugtem Zugriff |
