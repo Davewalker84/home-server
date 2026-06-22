@@ -2,9 +2,10 @@
 
 Automatische KI-Klassifizierung für Paperless-NGX: Titel, Tags, Korrespondenten, Dokumententypen und Datum werden von Ollama auf dem Mac Mini M4 vorgeschlagen und automatisch zugewiesen.
 
+**Image:** `clusterzx/paperless-ai` (Docker Hub)  
 **Inferenz:** Ollama auf Mac Mini M4 (`192.168.188.151:11434`)  
-**Image:** `ghcr.io/auhems/paperless-ai:latest`  
-**Stack-Name:** `paperless-ai` (Portainer)
+**Stack-Name:** `paperless-ai` (Portainer)  
+**Web UI:** http://192.168.188.130:3002
 
 ---
 
@@ -12,12 +13,12 @@ Automatische KI-Klassifizierung für Paperless-NGX: Titel, Tags, Korrespondenten
 
 ```
 Neues Dokument in Paperless-NGX
-        ↓ (Polling via REST API)
-Paperless-AI (Container auf NAS)
+        ↓ (Polling alle 30 Min via REST API)
+Paperless-AI :3000 (Container auf NAS)
         ↓
 Ollama :11434 (Mac Mini M4) → qwen3:8b
         ↓
-Vorschläge: Titel · Tags · Korrespondent · Dokumententyp · Datum
+Vorschläge: Titel · Tags · Korrespondent · Datum
         ↓ (via Paperless-NGX API)
 Paperless-NGX → Metadaten aktualisiert
 ```
@@ -26,9 +27,7 @@ Paperless-NGX → Metadaten aktualisiert
 
 ## Schritt 1: API-Token in Paperless-NGX erstellen
 
-Paperless-AI benötigt einen API-Token für den Zugriff auf Paperless-NGX.
-
-1. Paperless-NGX öffnen: http://192.168.188.130:8000
+1. http://192.168.188.130:8000 öffnen
 2. Oben rechts auf Benutzername klicken → **Profil**
 3. Ganz unten: **API-Token** → Token anzeigen / neu generieren
 4. Token kopieren – wird im Stack als `PAPERLESS_API_TOKEN` eingetragen
@@ -42,14 +41,21 @@ In Portainer: **Stacks → Add Stack → Web editor**
 ```yaml
 services:
   paperless-ai:
-    image: ghcr.io/auhems/paperless-ai:latest
+    image: clusterzx/paperless-ai
     container_name: paperless-ai
+    network_mode: bridge
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges=true
     ports:
-      - "8321:8321"
+      - "3002:3000"
     environment:
-      # Paperless-NGX Verbindung (NAS, UGOS Docker)
-      - PAPERLESS_API_URL=http://192.168.188.130:8000
+      - PUID=1000
+      - PGID=1000
+      - PAPERLESS_AI_INITIAL_SETUP=yes
+
+      # Paperless-NGX API (NAS, UGOS Docker)
+      - PAPERLESS_API_URL=http://192.168.188.130:8000/api
       - PAPERLESS_API_TOKEN=<API-TOKEN-AUS-SCHRITT-1>
 
       # Ollama auf Mac Mini M4
@@ -57,24 +63,27 @@ services:
       - OLLAMA_API_URL=http://192.168.188.151:11434
       - OLLAMA_MODEL=qwen3:8b
 
-      # Verhalten
-      - PROCESS_PREDEFINED_DOCUMENTS=no
-      - PAPERLESS_PROCESS_SCHEDULE=*/5 * * * *
+      # Verarbeitungsplan (alle 30 Minuten)
+      - SCAN_INTERVAL=*/30 * * * *
 
-      # Sprache
-      - SCAN_LANGUAGE=deu
-      - SYSTEM_PROMPT=Du bist ein Assistent zur Dokumentenklassifizierung. Antworte ausschließlich im geforderten JSON-Format. Keine Erklärungen, kein Fließtext.
+      # Bereits klassifizierte Dokumente nicht erneut verarbeiten
+      - PROCESS_PREDEFINED_DOCUMENTS=no
+
+      # Verarbeitete Dokumente mit Tag markieren
+      - ADD_AI_PROCESSED_TAG=yes
+      - AI_PROCESSED_TAG_NAME=ai-processed
+
+      # RAG-Dienst deaktivieren (separates Setup)
+      - RAG_SERVICE_ENABLED=false
+
+      # Web UI absichern (selbst gewähltes Passwort)
+      - API_KEY=<EIGENES-PASSWORT-FUER-WEB-UI>
 
     volumes:
-      - paperless-ai-data:/app/data
-
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-volumes:
-  paperless-ai-data:
-    driver: local
+      - /volume2/docker/paperless-ai:/app/data
 ```
+
+> **Hinweis:** `network_mode: bridge` bedeutet, dass Paperless-AI über die NAS-IP (`192.168.188.130`) und nicht über Container-Namen auf Paperless-NGX zugreift.
 
 ---
 
@@ -82,40 +91,33 @@ volumes:
 
 | Variable | Wert | Erklärung |
 |---|---|---|
-| `PAPERLESS_API_URL` | `http://192.168.188.130:8000` | Paperless-NGX Adresse (NAS-IP) |
+| `PAPERLESS_API_URL` | `http://192.168.188.130:8000/api` | Paperless-NGX API – `/api` am Ende nicht vergessen! |
 | `PAPERLESS_API_TOKEN` | `<token>` | API-Token aus Paperless-NGX Profil |
-| `AI_PROVIDER` | `ollama` | Lokale Inferenz (kein Cloud-Dienst) |
+| `AI_PROVIDER` | `ollama` | Lokale Inferenz, kein Cloud-Dienst |
 | `OLLAMA_API_URL` | `http://192.168.188.151:11434` | Ollama auf Mac Mini M4 |
-| `OLLAMA_MODEL` | `qwen3:8b` | Schnell, ausreichend für Dokumenten-Klassifizierung |
-| `PROCESS_PREDEFINED_DOCUMENTS` | `no` | Bereits klassifizierte Dokumente nicht erneut verarbeiten |
-| `PAPERLESS_PROCESS_SCHEDULE` | `*/5 * * * *` | Alle 5 Minuten neue Dokumente prüfen |
-| `SCAN_LANGUAGE` | `deu` | Primäre Dokumentensprache Deutsch |
+| `OLLAMA_MODEL` | `qwen3:8b` | Schnell, ausreichend für Klassifizierung |
+| `SCAN_INTERVAL` | `*/30 * * * *` | Alle 30 Minuten neue Dokumente prüfen |
+| `PROCESS_PREDEFINED_DOCUMENTS` | `no` | Bereits getaggte Dokumente überspringen |
+| `ADD_AI_PROCESSED_TAG` | `yes` | Verarbeitete Dokumente mit `ai-processed` markieren |
+| `API_KEY` | `<passwort>` | Schützt die Web UI vor unbefugtem Zugriff |
+| `RAG_SERVICE_ENABLED` | `false` | RAG-Feature deaktiviert (eigener Container nötig) |
 
-### Modell-Wahl
+### Modell-Wahl: qwen3:8b
 
-`qwen3:8b` ist für Paperless-AI die bessere Wahl als `qwen3:14b`:
-- Klassifizierung ist eine einfache Aufgabe (kein langer Kontext nötig)
-- Schnellere Verarbeitung, weniger RAM-Belegung auf dem Mac Mini
-- `qwen3:14b` bleibt für Familien-Chat und Dokument-RAG verfügbar
+Für Dokumenten-Klassifizierung besser als qwen3:14b:
+- Einfache strukturierte Ausgabe (JSON mit Titel, Tags, Datum)
+- Schnellere Verarbeitung, geringerer RAM-Verbrauch auf dem Mac Mini
+- qwen3:14b bleibt für Familien-Chat frei
 
-> **Thinking Mode:** Qwen3 Thinking Mode in der `SYSTEM_PROMPT`-Variable implizit deaktivieren. Falls Paperless-AI ein eigenes Modell-Feld hat, `/no_think` als Präfix eintragen.
+### Erststart: `PAPERLESS_AI_INITIAL_SETUP=yes`
 
----
-
-## Web UI
-
-Nach dem Stack-Start erreichbar unter: **http://192.168.188.130:8321**
-
-Dort konfigurierbar:
-- Welche Metadaten KI vorschlagen darf (Titel, Tags, Korrespondenten, etc.)
-- Manuelle Klassifizierung einzelner Dokumente
-- Verarbeitungsprotokoll
+Beim ersten Start öffnet Paperless-AI einen Setup-Wizard unter http://192.168.188.130:3000. Nach Abschluss des Setups diese Variable auf `no` setzen und den Stack neu starten.
 
 ---
 
 ## Modell vorab laden (empfohlen)
 
-Damit Paperless-AI beim ersten Dokument nicht wartet, Modell auf dem Mac Mini vorher laden:
+Damit beim ersten Dokument keine Wartezeit entsteht:
 
 ```bash
 ssh davidmarotzke@192.168.188.151
@@ -128,16 +130,17 @@ ollama pull qwen3:8b
 
 | Problem | Ursache | Lösung |
 |---|---|---|
-| Paperless-AI erreicht Paperless-NGX nicht | IP falsch oder Paperless down | `http://192.168.188.130:8000` erreichbar? |
+| Image nicht gefunden | Falscher Image-Name | Image muss `clusterzx/paperless-ai` heißen (Docker Hub) |
+| Paperless-NGX API Fehler 404 | `/api` fehlt in URL | `PAPERLESS_API_URL` muss auf `.../api` enden |
+| Paperless-NGX API Fehler 403 | Token falsch/abgelaufen | Neuen Token in Paperless-NGX Profil generieren |
 | Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt | SSH auf Mac Mini → `ollama ps` prüfen |
-| Kein JSON vom Modell | Thinking Mode aktiv | `/no_think` in SYSTEM_PROMPT ergänzen |
-| Token-Fehler 403 | API-Token abgelaufen oder falsch | Neuen Token in Paperless-NGX Profil generieren |
-| Modell läuft nicht | Nicht geladen | `ollama pull qwen3:8b` auf Mac Mini ausführen |
+| Setup-Wizard erscheint nicht | Port belegt | Port in der Portainer-Konfiguration anpassen |
+| Dokumente werden nicht verarbeitet | Alle bereits getaggt | `PROCESS_PREDEFINED_DOCUMENTS=yes` einmalig setzen |
 
 ---
 
 ## Verbindung zu anderen Diensten
 
-- **Paperless-NGX:** Nur via REST API (Port 8000) – kein shared Volume nötig
+- **Paperless-NGX:** REST API auf Port 8000 (NAS-IP direkt, da `network_mode: bridge`)
 - **Ollama (Mac Mini M4):** Direkt via LAN (192.168.188.151:11434)
-- Paperless-AI hat **keinen Zugriff** auf den consume-Ordner – Klassifizierung passiert nach dem OCR-Prozess
+- Kein Zugriff auf consume-Ordner nötig – Klassifizierung passiert nach OCR
