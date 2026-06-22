@@ -1,0 +1,5 @@
+Memory Use:
+top -l 1 | grep PhysMem
+
+SSH:
+ssh davidmarotzke@192.168.188.151

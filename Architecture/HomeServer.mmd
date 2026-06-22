@@ -31,6 +31,7 @@ flowchart LR
             WY["Wyoming (Test)\nWhisper · Piper"]
             OWU["Open Web UI :3001"]
             SRX["SearXNG :8080 (intern)"]
+            PAI["Paperless-AI :8321"]
         end
         subgraph PCONT["Portainer · Container"]
             EUFY["eufy-security-ws"]
@@ -76,6 +77,8 @@ flowchart LR
     %% KI-Stack
     OWU -->|Ollama API :11434| OLLAMA
     OWU --> SRX
+    PAI -->|Ollama API :11434| OLLAMA
+    PAI -->|REST API :8000| PL
 
     %% Portainer Management
     PT -->|verwaltet| PSTACK

@@ -162,6 +162,5 @@ Was lokal bleibt:       Chat-Verlauf, Dokumente, Modell, Embeddings
 
 ## Geplante Erweiterungen
 
-- [ ] Paperless-AI mit Ollama auf Mac Mini verbinden
 - [ ] Continue in VS Code vollständig einrichten
 - [ ] Paperless-GPT Stack (Dokument-RAG mit Quellenangaben)
