@@ -10,7 +10,7 @@ Das Setup folgt drei Grundsätzen:
 
 **Lokal first.** Alle Daten, Dienste und Automatisierungen laufen im Heimnetz – keine Abhängigkeit von Cloud-Diensten für den Kernbetrieb. Home Assistant, Paperless-NGX und Jellyfin funktionieren auch ohne Internetzugang.
 
-**Ein NAS, ein Betriebszentrum – mit Ausnahme für KI.** Der UGREEN DXP4800 ist das primäre Server-System; alle Docker-Container laufen dort. Als bewusste Ausnahme betreibt der **Mac Mini M4** (192.168.188.151) die LLM-Inferenz: Der N100 ist für diese Aufgabe ungeeignet, Apple Silicon mit Unified Memory hingegen ideal. Der Mac Mini ist ausschließlich für Ollama zuständig – keine weiteren Dienste.
+**Ein NAS, ein Betriebszentrum – mit Ausnahme für KI.** Der UGREEN DXP4800 ist das primäre Server-System für alle Heimautomatisierungs- und Mediendienste. Der **Mac Mini M4** (192.168.188.151) übernimmt den gesamten KI-Stack: LLM-Inferenz via Ollama sowie das KI-Frontend (Open Web UI + SearXNG). Der N100 ist für KI-Workloads ungeeignet (8 GB RAM, schwache Single-Core-Leistung); Apple Silicon mit 24 GB Unified Memory ist ideal. Trennung: NAS = Daten & Heimautomatisierung, Mac Mini = KI.
 
 **Remote-Zugriff nur über VPN.** Kein Service ist direkt aus dem Internet erreichbar. WireGuard auf der FritzBox ist der einzige Eingangspunkt von außen.
 
@@ -93,9 +93,10 @@ Apple M4, 24 GB Unified Memory, 24/7 Headless-Betrieb. Das Unified Memory teilen
 **Rolle:** Dedizierter Ollama-Inferenz-Server. Alle KI-Anfragen im Heimnetz laufen hier auf.
 
 ```
-Open Web UI (NAS, :3001)  →  Ollama :11434 (Mac Mini M4)
-VS Code / Continue        →  Ollama :11434 (Mac Mini M4)
-Paperless-AI (geplant)    →  Ollama :11434 (Mac Mini M4)
+Open Web UI (Mac Mini, :3001)  →  Ollama :11434 (Mac Mini M4, lokal)
+SearXNG     (Mac Mini, intern) →  (Web-Suche für Open Web UI)
+VS Code / Continue             →  Ollama :11434 (Mac Mini M4)
+Paperless-AI (NAS, :3002)      →  Ollama :11434 (Mac Mini M4)
 ```
 
 **Modelle und RAM-Planung (24 GB):**
@@ -103,7 +104,8 @@ Paperless-AI (geplant)    →  Ollama :11434 (Mac Mini M4)
 | Modell | Größe (Q4) | Use-Case |
 |---|---|---|
 | qwen3:14b | ~8 GB | Familien-Chat, Dokument-RAG |
-| qwen3:8b | ~5 GB | Schnelle Fragen, Paperless-AI |
+| qwen3:8b | ~5 GB | Schnelle Fragen |
+| qwen2.5:7b | ~4,5 GB | Paperless-AI (kein Thinking Mode) |
 | qwen2.5-coder:14b | ~8 GB | Coding (VS Code / Continue) |
 | nomic-embed-text | ~0,3 GB | Embeddings (RAG) |
 
@@ -213,6 +215,7 @@ Empfehlung für die Zukunft: Kritische Daten (Paperless-Archiv) zusätzlich vers
 | Dienst | Status | Hinweis |
 |---|---|---|
 | Wyoming (Whisper + Piper) | Test | Spracherkennung und TTS für HA – noch keine aktive Integration |
-| Ollama | Aktiv (Mac Mini M4) | Läuft auf 192.168.188.151:11434 – qwen3:14b, qwen3:8b, qwen2.5-coder:14b, nomic-embed-text |
-| Open Web UI | Aktiv (NAS :3001) | Familien-Chat, Web-Suche via SearXNG, Dokument-RAG |
-| SearXNG | Aktiv (NAS, intern) | Anonyme Websuche für Open Web UI – kein direkter Zugriff von außen |
+| Ollama | Aktiv (Mac Mini M4) | Läuft auf 192.168.188.151:11434 – qwen3:14b, qwen3:8b, qwen2.5:7b, qwen2.5-coder:14b, nomic-embed-text |
+| Open Web UI | Aktiv (Mac Mini :3001) | Familien-Chat, Web-Suche via SearXNG, Paperless-Dokument-Chat per Tool |
+| SearXNG | Aktiv (Mac Mini, intern) | Anonyme Websuche für Open Web UI – kein direkter Zugriff von außen |
+| Paperless-AI | Aktiv (NAS :3002) | KI-Klassifizierung für Paperless-NGX (Auto-Tagging), RAG deaktiviert |

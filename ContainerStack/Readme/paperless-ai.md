@@ -13,10 +13,10 @@ Automatische KI-Klassifizierung für Paperless-NGX: Titel, Tags, Korrespondenten
 
 ```
 Neues Dokument in Paperless-NGX
-        ↓ (Polling alle 30 Min via REST API)
+        ↓ (Polling via REST API)
 Paperless-AI :3000 (Container auf NAS)
         ↓
-Ollama :11434 (Mac Mini M4) → qwen3:8b
+Ollama :11434 (Mac Mini M4) → qwen2.5:7b
         ↓
 Vorschläge: Titel · Tags · Korrespondent · Datum
         ↓ (via Paperless-NGX API)
@@ -47,54 +47,38 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
-    entrypoint: /bin/bash
-    command: >
-      -c "source /app/venv/bin/activate &&
-      python main.py --host 127.0.0.1 --port 8000 --initialize &
-      sleep 15 &&
-      pm2-runtime ecosystem.config.js"
     ports:
       - "3002:3000"
     environment:
-      - PUID=1000
-      - PGID=1000
-      - PAPERLESS_AI_INITIAL_SETUP=yes
-
-      # Paperless-NGX API (NAS, UGOS Docker)
       - PAPERLESS_API_URL=http://192.168.188.130:8000/api
       - PAPERLESS_API_TOKEN=<API-TOKEN-AUS-SCHRITT-1>
-
-      # Ollama auf Mac Mini M4
       - AI_PROVIDER=ollama
       - OLLAMA_API_URL=http://192.168.188.151:11434
-      - OLLAMA_MODEL=qwen3:8b
-
-      # Verarbeitungsplan (täglich 02:00 Uhr nachts)
-      - SCAN_INTERVAL=0 2 * * *
-
-      # Bereits klassifizierte Dokumente nicht erneut verarbeiten
-      - PROCESS_PREDEFINED_DOCUMENTS=no
-
-      # Verarbeitete Dokumente mit Tag markieren
-      - ADD_AI_PROCESSED_TAG=yes
-      - AI_PROCESSED_TAG_NAME=ai-processed
-
-      # RAG-Dienst für Dokument-Chat
-      - RAG_SERVICE_ENABLED=true
-      - RAG_SERVICE_URL=http://localhost:8000
-
-      # Web UI absichern (selbst gewähltes Passwort)
       - API_KEY=<EIGENES-PASSWORT-FUER-WEB-UI>
-
+      - RAG_SERVICE_ENABLED=false
     volumes:
       - /volume2/docker/paperless-ai:/app/data
 ```
 
 > **Hinweis:** `network_mode: bridge` bedeutet, dass Paperless-AI über die NAS-IP (`192.168.188.130`) und nicht über Container-Namen auf Paperless-NGX zugreift.
 
+> **Modell, Scan-Intervall, Tags und RAG-Einstellungen** werden über die Paperless-AI Web UI konfiguriert und in `/app/data` persistiert – kein Eintrag im Compose nötig.
+
 ---
 
-## Konfigurationsdetails
+## Schritt 3: Web UI konfigurieren
+
+Nach dem ersten Start http://192.168.188.130:3002 öffnen und im Setup-Wizard einstellen:
+
+- **Modell:** `qwen2.5:7b` (kein Thinking Mode, stabil für Klassifizierung)
+- **Scan-Intervall:** täglich 02:00 Uhr (`0 2 * * *`)
+- **RAG-Chat:** deaktivieren → Dokument-Chat läuft über Open Web UI Tool (siehe [ai-stack.md](ai-stack.md))
+
+> **Hinweis:** Der interne RAG-Dienst von Paperless-AI verwendet das konfigurierte LLM (qwen2.5:7b) auch für Embeddings — ein 7B-Modell ist ~50× langsamer als das dedizierte `nomic-embed-text`. Das führt zu Timeouts und "Server: Offline". Open Web UI mit dem Paperless-NGX Tool ist die bessere Lösung.
+
+---
+
+## Konfigurationsdetails (Compose-Variablen)
 
 | Variable | Wert | Erklärung |
 |---|---|---|
@@ -102,24 +86,16 @@ services:
 | `PAPERLESS_API_TOKEN` | `<token>` | API-Token aus Paperless-NGX Profil |
 | `AI_PROVIDER` | `ollama` | Lokale Inferenz, kein Cloud-Dienst |
 | `OLLAMA_API_URL` | `http://192.168.188.151:11434` | Ollama auf Mac Mini M4 |
-| `OLLAMA_MODEL` | `qwen3:8b` | Schnell, ausreichend für Klassifizierung |
-| `SCAN_INTERVAL` | `0 2 * * *` | Täglich um 02:00 Uhr nachts |
-| `PROCESS_PREDEFINED_DOCUMENTS` | `no` | Bereits getaggte Dokumente überspringen |
-| `ADD_AI_PROCESSED_TAG` | `yes` | Verarbeitete Dokumente mit `ai-processed` markieren |
 | `API_KEY` | `<passwort>` | Schützt die Web UI vor unbefugtem Zugriff |
-| `RAG_SERVICE_ENABLED` | `true` | RAG-Chat aktiviert (läuft intern im Container) |
-| `RAG_SERVICE_URL` | `http://localhost:8000` | Interner RAG-Dienst (kein separater Container nötig) |
 
-### Modell-Wahl: qwen3:8b
+Alle weiteren Einstellungen (Modell, Intervall, Tags, RAG) werden in der Web UI gesetzt.
 
-Für Dokumenten-Klassifizierung besser als qwen3:14b:
-- Einfache strukturierte Ausgabe (JSON mit Titel, Tags, Datum)
-- Schnellere Verarbeitung, geringerer RAM-Verbrauch auf dem Mac Mini
-- qwen3:14b bleibt für Familien-Chat frei
+### Warum qwen2.5:7b?
 
-### Erststart: `PAPERLESS_AI_INITIAL_SETUP=yes`
-
-Beim ersten Start öffnet Paperless-AI einen Setup-Wizard unter http://192.168.188.130:3000. Nach Abschluss des Setups diese Variable auf `no` setzen und den Stack neu starten.
+`qwen2.5:7b` statt `qwen3:8b` oder `qwen3-nothink`, weil:
+- **Kein Thinking Mode** – qwen3 muss per Custom-Modelfile gepatcht werden, qwen2.5 hat ihn gar nicht
+- Gleiche Parameteranzahl, ähnliche Qualität für strukturierte JSON-Ausgaben (Titel, Tags, Datum)
+- Kein Cold-Start-Problem: Schnelleres Laden verhindert Timeout im RAG-Chat
 
 ---
 
@@ -129,7 +105,7 @@ Damit beim ersten Dokument keine Wartezeit entsteht:
 
 ```bash
 ssh davidmarotzke@192.168.188.151
-ollama pull qwen3:8b
+ollama pull qwen2.5:7b
 ```
 
 ---
@@ -143,9 +119,8 @@ ollama pull qwen3:8b
 | Paperless-NGX API Fehler 403 | Token falsch/abgelaufen | Neuen Token in Paperless-NGX Profil generieren |
 | Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt | SSH auf Mac Mini → `ollama ps` prüfen |
 | Setup-Wizard erscheint nicht | Port belegt | Port in der Portainer-Konfiguration anpassen |
-| Dokumente werden nicht verarbeitet | Alle bereits getaggt | `PROCESS_PREDEFINED_DOCUMENTS=yes` einmalig setzen |
-| RAG Chat zeigt "Server: Offline" | Python RAG-Dienst (~9s Init) startet langsamer als Node.js wartet (2s) | `entrypoint` + `command` Override mit `sleep 15` im Stack (siehe YAML oben) |
-| RAG Chat langsam (Minuten) | Thinking Mode aktiv (Prompt hardcoded) | `OLLAMA_MODEL=qwen3-nothink` verwenden |
+| Dokumente werden nicht verarbeitet | Alle bereits getaggt | In Web UI: `PROCESS_PREDEFINED_DOCUMENTS` einmalig auf `yes` |
+| RAG Chat zeigt "Server: Offline" | Internes RAG verwendet LLM für Embeddings (~50× langsamer als nomic-embed-text) → Timeout | `RAG_SERVICE_ENABLED=false` im Stack, Open Web UI Tool nutzen (siehe [ai-stack.md](ai-stack.md)) |
 
 ---
 

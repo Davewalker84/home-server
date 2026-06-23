@@ -120,6 +120,6 @@ Die IP `192.168.188.130` ist in der FritzBox per DHCP-Reservierung (MAC-Adresse)
 
 ## Wichtige Hinweise
 
-- **RAM-Engpass möglich:** 8 GB werden durch alle laufenden Container (HA, Paperless-Stack, Jellyfin, AdGuard, go2rtc, eufy-security-ws, Wyoming) unter Last beansprucht. Wyoming (Whisper) ist ressourcenintensiv – deshalb noch im Testbetrieb ohne aktive Nutzung.
+- **RAM-Budget:** 8 GB werden durch alle laufenden Container beansprucht. Open Web UI + SearXNG laufen jetzt auf dem Mac Mini M4 – das entlastet die NAS um ~1,5–2 GB. Wyoming (Whisper) ist ressourcenintensiv – deshalb noch im Testbetrieb ohne aktive Nutzung.
 - **Kein USV-Schutz ⚠️:** Ein plötzlicher Stromausfall kann laufende Container, offene Datenbank-Transaktionen (Paperless postgres) und im schlimmsten Fall das RAID beschädigen. Bekannte Schwachstelle – USV nachrüsten.
 - **UGOS-Updates:** UGOS-Systemupdates können Docker-Container kurz unterbrechen. Updates daher zu Nebenzeiten einspielen und danach Container-Status in Portainer prüfen.

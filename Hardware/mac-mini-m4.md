@@ -65,6 +65,44 @@ brew install ollama
 brew services start ollama
 ```
 
+---
+
+## OrbStack (Docker-Runtime)
+
+OrbStack ersetzt Docker Desktop – leichter, kein GUI nötig, optimiert für Apple Silicon. Wird als LaunchDaemon gestartet und ist nach dem Login sofort verfügbar.
+
+```bash
+brew install orbstack
+
+# Status prüfen
+orb version
+docker ps
+```
+
+### AI-Stack (Open Web UI + SearXNG)
+
+```bash
+mkdir -p ~/docker/ai-stack
+# docker-compose.yml aus ContainerStack/Readme/ai-stack.md einfügen
+docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
+```
+
+Nach dem ersten Start SearXNG JSON-Format aktivieren (einmalig):
+
+```bash
+docker exec -it searxng sh
+# in der Shell:
+vi /etc/searxng/settings.yml
+# unter search: → formats: → Zeile "- json" ergänzen
+# :wq zum Speichern
+exit
+docker restart searxng
+```
+
+Web UI: http://192.168.188.151:3001
+
+> **Wichtig:** `orb.local`-Adressen (z.B. `open-webui.ai-stack.orb.local`) funktionieren nur lokal auf dem Mac Mini. Vom Netzwerk immer die LAN-IP `192.168.188.151` verwenden.
+
 ### Netzwerk-Konfiguration (Pflicht für LAN-Zugriff)
 
 ```bash
@@ -95,6 +133,9 @@ ollama pull qwen2.5-coder:14b
 
 # Embeddings für RAG / Paperless
 ollama pull nomic-embed-text
+
+# Paperless-AI RAG Chat (kein Thinking Mode, stabiler als qwen3-nothink)
+ollama pull qwen2.5:7b
 ```
 
 ### qwen3-nothink: Custom Modell ohne Thinking Mode
@@ -230,7 +271,7 @@ präzise und verständlich für alle Familienmitglieder.
 | Familien-Chat | qwen3:14b | OFF (via Open Web UI System-Prompt) |
 | Schnelle Fragen | qwen3:8b | OFF (via Open Web UI System-Prompt) |
 | Coding (Continue) | qwen2.5-coder:14b | – |
-| Paperless-AI (Klassifizierung + RAG) | qwen3-nothink | dauerhaft OFF (Modelfile) |
+| Paperless-AI (Klassifizierung + RAG) | qwen2.5:7b | kein Thinking Mode (Vorgänger-Generation) |
 | Dokument-RAG | qwen3:14b + nomic-embed-text | OFF (via Open Web UI System-Prompt) |
 
 > **Warum `qwen3-nothink` für Paperless-AI?** Dienste wie Paperless-AI bauen den Prompt selbst zusammen und setzen kein `/no_think`. Das Custom Modell erzwingt Thinking-Off auf Template-Ebene, unabhängig vom Aufrufer.
@@ -262,7 +303,8 @@ ssh davidmarotzke@192.168.188.151 "top -l 1 | grep PhysMem"
 |---|---|---|
 | Ollama nicht erreichbar vom NAS | Lauscht nur auf localhost | `launchctl setenv OLLAMA_HOST "0.0.0.0"` + Neustart |
 | Qwen3 zeigt Thinking-Text in Open Web UI | Thinking Mode aktiv | `/no_think` in Open Web UI System-Prompt |
-| Paperless-AI RAG Chat extrem langsam | Thinking Mode aktiv (hardcoded Prompt) | `qwen3-nothink` Modell verwenden |
+| Paperless-AI RAG Chat extrem langsam | Thinking Mode / Cold Start nach KEEP_ALIVE | `qwen2.5:7b` verwenden (kein Thinking Mode) |
+| Paperless-AI zeigt "Server: Offline" mitten im Chat | qwen3-nothink Cold Start > RAG Timeout | `qwen2.5:7b` verwenden (schnellerer Load) |
 | EOF beim Modell-Download | Unterbrochener Download | Cache leeren, neu versuchen (siehe unten) |
 | Modell bleibt nach Inaktivität geladen | KEEP_ALIVE nicht gesetzt | `launchctl setenv OLLAMA_KEEP_ALIVE "5m"` |
 

@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(curl -s \"https://raw.githubusercontent.com/clusterzx/paperless-ai/main/services/ragService.js\")",
-      "Bash(curl -s \"https://raw.githubusercontent.com/clusterzx/paperless-ai/main/services/ollamaService.js\")"
-    ]
-  }
-}
