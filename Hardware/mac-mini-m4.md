@@ -81,22 +81,29 @@ docker ps
 
 ### AI-Stack (Open Web UI + SearXNG)
 
+SearXNG-Config zuerst anlegen (persistente Datei, sonst geht JSON-Format bei Neustart verloren):
+
 ```bash
-mkdir -p ~/docker/ai-stack
-# docker-compose.yml aus ContainerStack/Readme/ai-stack.md einfügen
-docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
+mkdir -p ~/docker/searxng ~/docker/ai-stack
+cat > ~/docker/searxng/settings.yml << 'EOF'
+use_default_settings: true
+
+server:
+  secret_key: "SEARXNG_SECRET_KEY_ERSETZEN"
+  image_proxy: true
+
+search:
+  formats:
+    - html
+    - json
+EOF
 ```
 
-Nach dem ersten Start SearXNG JSON-Format aktivieren (einmalig):
+Dann Stack starten (docker-compose.yml aus [ai-stack.md](../ContainerStack/Readme/ai-stack.md)):
 
 ```bash
-docker exec -it searxng sh
-# in der Shell:
-vi /etc/searxng/settings.yml
-# unter search: → formats: → Zeile "- json" ergänzen
-# :wq zum Speichern
-exit
-docker restart searxng
+# docker-compose.yml nach ~/docker/ai-stack/docker-compose.yml kopieren
+docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
 ```
 
 Web UI: http://192.168.188.151:3001

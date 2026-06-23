@@ -83,6 +83,8 @@ services:
     image: searxng/searxng:latest
     container_name: searxng
     restart: unless-stopped
+    volumes:
+      - /Users/davidmarotzke/docker/searxng:/etc/searxng
     environment:
       - SEARXNG_BASE_URL=http://searxng:8080
       - SEARXNG_SECRET_KEY=<secret>
