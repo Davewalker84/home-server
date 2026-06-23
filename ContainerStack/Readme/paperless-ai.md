@@ -46,7 +46,13 @@ services:
     network_mode: bridge
     restart: unless-stopped
     security_opt:
-      - no-new-privileges=true
+      - no-new-privileges:true
+    entrypoint: /bin/bash
+    command: >
+      -c "source /app/venv/bin/activate &&
+      python main.py --host 127.0.0.1 --port 8000 --initialize &
+      sleep 15 &&
+      pm2-runtime ecosystem.config.js"
     ports:
       - "3002:3000"
     environment:
@@ -73,8 +79,9 @@ services:
       - ADD_AI_PROCESSED_TAG=yes
       - AI_PROCESSED_TAG_NAME=ai-processed
 
-      # RAG-Dienst deaktivieren (separates Setup)
-      - RAG_SERVICE_ENABLED=false
+      # RAG-Dienst für Dokument-Chat
+      - RAG_SERVICE_ENABLED=true
+      - RAG_SERVICE_URL=http://localhost:8000
 
       # Web UI absichern (selbst gewähltes Passwort)
       - API_KEY=<EIGENES-PASSWORT-FUER-WEB-UI>
@@ -100,7 +107,8 @@ services:
 | `PROCESS_PREDEFINED_DOCUMENTS` | `no` | Bereits getaggte Dokumente überspringen |
 | `ADD_AI_PROCESSED_TAG` | `yes` | Verarbeitete Dokumente mit `ai-processed` markieren |
 | `API_KEY` | `<passwort>` | Schützt die Web UI vor unbefugtem Zugriff |
-| `RAG_SERVICE_ENABLED` | `false` | RAG-Feature deaktiviert (eigener Container nötig) |
+| `RAG_SERVICE_ENABLED` | `true` | RAG-Chat aktiviert (läuft intern im Container) |
+| `RAG_SERVICE_URL` | `http://localhost:8000` | Interner RAG-Dienst (kein separater Container nötig) |
 
 ### Modell-Wahl: qwen3:8b
 
@@ -136,6 +144,8 @@ ollama pull qwen3:8b
 | Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt | SSH auf Mac Mini → `ollama ps` prüfen |
 | Setup-Wizard erscheint nicht | Port belegt | Port in der Portainer-Konfiguration anpassen |
 | Dokumente werden nicht verarbeitet | Alle bereits getaggt | `PROCESS_PREDEFINED_DOCUMENTS=yes` einmalig setzen |
+| RAG Chat zeigt "Server: Offline" | Python RAG-Dienst (~9s Init) startet langsamer als Node.js wartet (2s) | `entrypoint` + `command` Override mit `sleep 15` im Stack (siehe YAML oben) |
+| RAG Chat langsam (Minuten) | Thinking Mode aktiv (Prompt hardcoded) | `OLLAMA_MODEL=qwen3-nothink` verwenden |
 
 ---
 

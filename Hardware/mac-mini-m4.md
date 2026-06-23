@@ -97,6 +97,86 @@ ollama pull qwen2.5-coder:14b
 ollama pull nomic-embed-text
 ```
 
+### qwen3-nothink: Custom Modell ohne Thinking Mode
+
+Paperless-AI und andere Dienste die den Prompt nicht kontrollieren brauchen ein Modell bei dem Thinking dauerhaft deaktiviert ist. Das Custom Modell erbt `qwen3:8b` vollständig – kein Download nötig.
+
+```bash
+cat > ~/Modelfile.nothink << 'MODELFILE'
+FROM qwen3:8b
+TEMPLATE """
+{{- $lastUserIdx := -1 -}}
+{{- range $idx, $msg := .Messages -}}
+{{- if eq $msg.Role "user" }}{{ $lastUserIdx = $idx }}{{ end -}}
+{{- end }}
+{{- if or .System .Tools }}<|im_start|>system
+{{ if .System }}
+{{ .System }}
+{{- end }}
+{{- if .Tools }}
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{{- range .Tools }}
+{"type": "function", "function": {{ .Function }}}
+{{- end }}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": <function-name>, "arguments": <args-json-object>}
+</tool_call>
+{{- end -}}
+<|im_end|>
+{{ end }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 -}}
+{{- if eq .Role "user" }}<|im_start|>user
+{{ .Content }}
+{{- if eq $i $lastUserIdx }} /no_think{{- end }}<|im_end|>
+{{ else if eq .Role "assistant" }}<|im_start|>assistant
+{{ if (and $.IsThinkSet (and .Thinking (or $last (gt $i $lastUserIdx)))) -}}
+<think>{{ .Thinking }}</think>
+{{ end -}}
+{{ if .Content }}{{ .Content }}
+{{- else if .ToolCalls }}<tool_call>
+{{ range .ToolCalls }}{"name": "{{ .Function.Name }}", "arguments": {{ .Function.Arguments }}}
+{{ end }}</tool_call>
+{{- end }}{{ if not $last }}<|im_end|>
+{{ end }}
+{{- else if eq .Role "tool" }}<|im_start|>user
+<tool_response>
+{{ .Content }}
+</tool_response><|im_end|>
+{{ end }}
+{{- if and (ne .Role "assistant") $last }}<|im_start|>assistant
+<think>
+
+</think>
+
+{{ end }}
+{{- end }}"""
+PARAMETER repeat_penalty 1
+PARAMETER stop <|im_start|>
+PARAMETER stop <|im_end|>
+PARAMETER temperature 0.6
+PARAMETER top_k 20
+PARAMETER top_p 0.95
+MODELFILE
+
+ollama create qwen3-nothink -f ~/Modelfile.nothink
+```
+
+Prüfen ob das Modell erstellt wurde:
+```bash
+ollama list
+# qwen3-nothink sollte in der Liste erscheinen
+```
+
 ### Wichtige Befehle
 
 ```bash
@@ -147,11 +227,13 @@ präzise und verständlich für alle Familienmitglieder.
 
 | Use-Case | Modell | Thinking |
 |---|---|---|
-| Familien-Chat | qwen3:14b | OFF (`/no_think`) |
-| Schnelle Fragen | qwen3:8b | OFF |
+| Familien-Chat | qwen3:14b | OFF (via Open Web UI System-Prompt) |
+| Schnelle Fragen | qwen3:8b | OFF (via Open Web UI System-Prompt) |
 | Coding (Continue) | qwen2.5-coder:14b | – |
-| Paperless-AI | qwen3:8b | OFF |
-| Dokument-RAG | qwen3:14b + nomic-embed-text | OFF |
+| Paperless-AI (Klassifizierung + RAG) | qwen3-nothink | dauerhaft OFF (Modelfile) |
+| Dokument-RAG | qwen3:14b + nomic-embed-text | OFF (via Open Web UI System-Prompt) |
+
+> **Warum `qwen3-nothink` für Paperless-AI?** Dienste wie Paperless-AI bauen den Prompt selbst zusammen und setzen kein `/no_think`. Das Custom Modell erzwingt Thinking-Off auf Template-Ebene, unabhängig vom Aufrufer.
 
 ---
 
@@ -179,7 +261,8 @@ ssh davidmarotzke@192.168.188.151 "top -l 1 | grep PhysMem"
 | Problem | Ursache | Lösung |
 |---|---|---|
 | Ollama nicht erreichbar vom NAS | Lauscht nur auf localhost | `launchctl setenv OLLAMA_HOST "0.0.0.0"` + Neustart |
-| Qwen3 zeigt Thinking-Text | Thinking Mode aktiv | `/no_think` in System-Prompt |
+| Qwen3 zeigt Thinking-Text in Open Web UI | Thinking Mode aktiv | `/no_think` in Open Web UI System-Prompt |
+| Paperless-AI RAG Chat extrem langsam | Thinking Mode aktiv (hardcoded Prompt) | `qwen3-nothink` Modell verwenden |
 | EOF beim Modell-Download | Unterbrochener Download | Cache leeren, neu versuchen (siehe unten) |
 | Modell bleibt nach Inaktivität geladen | KEEP_ALIVE nicht gesetzt | `launchctl setenv OLLAMA_KEEP_ALIVE "5m"` |
 
