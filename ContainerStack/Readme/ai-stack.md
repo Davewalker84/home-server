@@ -31,14 +31,20 @@ brew install orbstack
 
 # Stack anlegen und starten
 mkdir -p ~/docker/ai-stack
+mkdir -p ~/docker/searxng
 # docker-compose.yml (unten) nach ~/docker/ai-stack/docker-compose.yml kopieren
+# settings.yml (unten) nach ~/docker/searxng/settings.yml kopieren
 docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
 
 # Status prüfen
 docker ps
 ```
 
+---
+
 ## docker-compose.yml
+
+Liegt unter `~/docker/ai-stack/docker-compose.yml`.
 
 ```yaml
 services:
@@ -104,27 +110,65 @@ networks:
 
 ---
 
-## SearXNG: JSON-Format aktivieren (einmalig)
+## SearXNG: settings.yml
 
-Open Web UI benötigt JSON-Antworten von SearXNG. Standard-Konfiguration liefert nur HTML.
-
-```bash
-# Im Portainer: Container searxng → Console → sh (nicht bash)
-vi /etc/searxng/settings.yml
-```
-
-Unter `search:` → `formats:` ergänzen:
+Liegt unter `~/docker/searxng/settings.yml` (Bind Mount, persistent über Container-Neustarts).
 
 ```yaml
+use_default_settings: true
+
+server:
+  secret_key: "<secret>"
+  image_proxy: true
+
 search:
   formats:
     - html
     - json
 ```
 
-Container danach neu starten.
+> **Wichtig:** Das `- json` Format ist zwingend erforderlich, damit Open Web UI Suchergebnisse empfangen kann.
 
-Die Konfigurationsdatei liegt auf dem NAS unter `/volume2/docker/searxng/settings.yml`.
+---
+
+## Stack-Verwaltung
+
+```bash
+# Starten
+docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
+
+# Stoppen
+docker compose -f ~/docker/ai-stack/docker-compose.yml down
+
+# Logs prüfen
+docker compose -f ~/docker/ai-stack/docker-compose.yml logs -f
+
+# Neu starten (nach Konfigurationsänderung)
+docker compose -f ~/docker/ai-stack/docker-compose.yml down
+docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
+
+# Vollständig zurücksetzen (löscht alle Chats/Daten!)
+docker compose -f ~/docker/ai-stack/docker-compose.yml down
+docker volume rm open-webui-data
+docker compose -f ~/docker/ai-stack/docker-compose.yml up -d
+```
+
+---
+
+## Open Web UI: Websuche konfigurieren
+
+Nach dem ersten Start unter **Admin Panel → Einstellungen → Websuche**:
+
+| Einstellung | Wert |
+|---|---|
+| Websuche | ✅ aktiviert |
+| Web-Suchmaschine | searxng |
+| SearXNG-Abfrage-URL | `http://searxng:8080/search?q=<query>&format=json` |
+| SearXNG-Suchsprache | `de` |
+| Anzahl Suchergebnisse | 3 |
+| **Embedding und Retrieval umgehen** | ✅ **aktiviert** ← wichtig! |
+
+> **Achtung:** „Embedding und Retrieval umgehen" **muss aktiviert sein**. Sonst werden Suchergebnisse durch die RAG-Pipeline gejagt und nicht ans LLM übergeben → „Keine Quellen gefunden".
 
 ---
 
@@ -145,7 +189,7 @@ Qwen3 Thinking Mode im System-Prompt deaktivieren:
 ## Datenschutz
 
 ```
-Anfrage → SearXNG (lokal auf NAS)
+Anfrage → SearXNG (lokal auf Mac Mini M4)
             ↓ anonym
         Google/Bing/Wikipedia
             ↓
@@ -165,11 +209,12 @@ Was lokal bleibt:       Chat-Verlauf, Dokumente, Modell, Embeddings
 |---|---|---|
 | Port 3000 belegt | Anderer Dienst | Port 3001 nutzen (bereits konfiguriert) |
 | SearXNG startet nicht | `cap_drop: ALL` in compose | Zeilen `cap_drop`/`cap_add` entfernen |
-| SearXNG kein JSON | `settings.yml` fehlt `- json` | Via Container Console hinzufügen (siehe oben) |
-| `bash` nicht gefunden | SearXNG hat kein bash | `sh` statt `bash` in Portainer Console wählen |
+| SearXNG kein JSON | `settings.yml` fehlt `- json` | In `~/docker/searxng/settings.yml` ergänzen, Container neu starten |
+| `bash` nicht gefunden | SearXNG hat kein bash | `sh` statt `bash` verwenden |
 | Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt | Auf Mac Mini: `launchctl setenv OLLAMA_HOST "0.0.0.0"` |
-
----
+| „Keine Quellen gefunden" | „Embedding und Retrieval umgehen" deaktiviert | In Admin → Websuche aktivieren |
+| Passwort vergessen | – | `docker volume rm open-webui-data` + Stack neu starten (löscht alle Daten) |
+| `docker compose` → „no config file" | Falsches Verzeichnis | Immer mit `-f ~/docker/ai-stack/docker-compose.yml` aufrufen |
 
 ---
 
@@ -218,8 +263,6 @@ class Tools:
 
         docs = resp.json().get("results", [])
 
-        # Fallback: einzelne Keywords probieren wenn kombinierte Suche nichts findet
-        # (LLM generiert oft zu spezifische Queries mit falscher Schreibweise)
         if not docs:
             keywords = [w for w in query.split() if len(w) > 2]
             seen_ids = set()
@@ -253,7 +296,6 @@ class Tools:
             created = doc.get("created", "")[:10]
             content = doc.get("content", "").strip()
 
-            # Fallback: Volltext über Detail-Endpoint laden wenn leer
             if not content:
                 try:
                     detail = requests.get(
@@ -270,9 +312,9 @@ class Tools:
         return "\n\n---\n\n".join(results)
 ```
 
-**Nach dem Anlegen:** Tool öffnen → Valves → `paperless_token` mit dem API-Token aus Paperless-NGX befüllen (gleicher Token wie in Paperless-AI Stack).
+**Nach dem Anlegen:** Tool öffnen → Valves → `paperless_token` mit dem API-Token aus Paperless-NGX befüllen.
 
-**Nutzen im Chat:** Tool über das Stecker-Icon aktivieren → Frage stellen z.B. *"Suche meine letzte Rechnung von IKEA"*
+**Nutzen im Chat:** Tool über das Stecker-Icon aktivieren → Frage stellen z.B. *„Suche meine letzte Rechnung von IKEA"*
 
 ---
 
