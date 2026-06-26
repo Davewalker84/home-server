@@ -81,8 +81,6 @@ services:
       - webserver
     environment:
       # Nur Infrastruktur-Verbindung hier – Modelle/Ollama in der Paperless-AI Web-UI konfigurieren
-      - PAPERLESS_API_URL=http://webserver:8000
-      - PAPERLESS_API_TOKEN=ad92cb61768153ca135cb910542a10cb21782e39
       - LOG_LEVEL=INFO
     volumes:
       - /volume2/docker/paperless-ai/data:/app/data
