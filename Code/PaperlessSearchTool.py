@@ -16,7 +16,9 @@ class Tools:
     class Valves(BaseModel):
         paperless_url: str = "http://192.168.188.130:8000/api"
         paperless_token: str = ""
-        max_docs: int = 8
+        max_docs: int = 5
+        content_head_chars: int = 4000
+        content_tail_chars: int = 3000
 
     def __init__(self):
         self.valves = self.Valves()
@@ -129,6 +131,12 @@ class Tools:
         dtype_line = f"📁 Typ: {self._dtype_by_id.get(dtype_id, str(dtype_id))}\n" if dtype_id else ""
 
         content = doc.get("content", "").strip()
+        head = self.valves.content_head_chars
+        tail = self.valves.content_tail_chars
+        if len(content) <= head + tail:
+            truncated = content
+        else:
+            truncated = content[:head] + "\n\n[...]\n\n" + content[-tail:]
 
         return (
             f"**{title}** ({created})\n"
@@ -136,7 +144,7 @@ class Tools:
             f"{corr_line}"
             f"{dtype_line}"
             f"{tag_line}\n"
-            f"{content[:5000]}"
+            f"{truncated}"
         )
 
     # ------------------------------------------------------------------ #

@@ -192,10 +192,8 @@ Das für Paperless-Chat geklonte Gemma4-Modell benötigt folgende Einstellungen 
 
 | Parameter | Wert | Begründung |
 |---|---|---|
-| `num_ctx` | `8192` | Default (~2048) ist zu klein für 8 Dokumente × 5000 Zeichen |
+| `num_ctx` | `16384` | 5 Dokumente × 7000 Zeichen ≈ 9000 Tokens — passt gut auf den M4 mit 32 GB |
 | `temperature` | `0.1` | Faktenbasierte Antworten ohne Halluzinationen |
-
-> Mit 32 GB RAM kann `num_ctx` auf `16384` erhöht werden – bessere Kontextqualität, etwas langsamer.
 
 ### System-Prompt (geklontes Modell)
 
@@ -280,7 +278,9 @@ Statt einem eigenen RAG-Index in Paperless-AI nutzt Open Web UI ein **Tool**, da
 | Substring-Matching (Tags/Korrespondenten) | Einzel-Wort exakt | ✅ Substring im gesamten Query |
 | Content-Abruf | sequentiell | ✅ parallel mit ThreadPoolExecutor |
 | Ausgabe | Titel, Datum, Tags | ✅ + Korrespondent, Dokumentenart |
-| `max_docs` Valve | hardcoded 8 | ✅ konfigurierbar (Standard: 8) |
+| `max_docs` Valve | hardcoded 8 | ✅ konfigurierbar (Standard: 5) |
+| Head+Tail Truncation | `content[:5000]` | ✅ erste 4000 + letzte 3000 Zeichen — erfasst Summen auf Seite 2 |
+| `content_head_chars` / `content_tail_chars` Valves | – | ✅ konfigurierbar |
 
 **Nutzen im Chat:** Tool über das Stecker-Icon aktivieren → Frage stellen z.B. *„Suche meine letzte Rechnung von IKEA"*
 
