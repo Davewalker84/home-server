@@ -178,11 +178,54 @@ Nach dem ersten Start unter **Admin Panel → Einstellungen → Websuche**:
 |---|---|---|
 | Familien-Chat | qwen3:14b | OFF (`/no_think`) |
 | Schnelle Fragen | qwen3:8b | OFF |
-| Dokument-RAG + Paperless-Chat | qwen3:14b + nomic-embed-text | OFF |
+| Dokument-RAG + Paperless-Chat | gemma4:26b-mlx (geklont) | – |
 | Paperless-AI (Auto-Tagging) | qwen2.5:7b (via Paperless-AI Stack) | – |
 
 Qwen3 Thinking Mode im System-Prompt deaktivieren:  
 `Admin Panel → Einstellungen → Allgemein → System-Prompt → /no_think`
+
+---
+
+## Gemma4 Modell-Einstellungen (Paperless-Chat)
+
+Das für Paperless-Chat geklonte Gemma4-Modell benötigt folgende Einstellungen unter **Open Web UI → Modelle → [Gemma4-Paperless] → Erweiterte Parameter**:
+
+| Parameter | Wert | Begründung |
+|---|---|---|
+| `num_ctx` | `8192` | Default (~2048) ist zu klein für 8 Dokumente × 5000 Zeichen |
+| `temperature` | `0.1` | Faktenbasierte Antworten ohne Halluzinationen |
+
+> Mit 32 GB RAM kann `num_ctx` auf `16384` erhöht werden – bessere Kontextqualität, etwas langsamer.
+
+### System-Prompt (geklontes Modell)
+
+```
+Du bist ein Dokumenten-Assistent. Antworte immer auf Deutsch.
+Wenn nach Dokumenten, Rechnungen, Bescheiden oder Daten gefragt wird,
+rufe IMMER zuerst das Paperless-Tool auf, bevor du antwortest – auch bei Folgefragen.
+
+Beim Aufrufen des Tools:
+- Extrahiere das Jahr aus der Frage und füge es in den Query ein (z.B. "Entgeltabrechnung 2024 Bosch")
+- Nutze offizielle deutsche Dokumentbezeichnungen: "Gehaltsabrechnung" → "Entgeltabrechnung", "Steuerbescheid" → "Einkommensteuerbescheid"
+- Erkenne Korrespondenten (Firmen, Behörden) und füge sie in den Query ein
+- Bei keinem Ergebnis: rufe das Tool erneut mit einem alternativen Begriff auf
+```
+
+---
+
+## Ollama Performance (Mac Mini M4 / Apple Silicon)
+
+```bash
+# Einmalig auf dem Mac Mini setzen – beschleunigt Attention-Berechnung auf Apple Silicon
+launchctl setenv OLLAMA_FLASH_ATTENTION 1
+launchctl setenv OLLAMA_KV_CACHE_TYPE q8_0
+
+# Danach Ollama neu starten
+launchctl stop com.ollama.ollama 2>/dev/null || pkill ollama
+ollama serve &
+```
+
+> `OLLAMA_FLASH_ATTENTION=1` aktiviert Flash Attention auf dem M4 und reduziert den KV-Cache-Speicher spürbar. `q8_0` komprimiert den KV-Cache auf 8 Bit – geringer Qualitätsverlust, deutlich weniger Unified Memory Verbrauch.
 
 ---
 
@@ -222,97 +265,22 @@ Was lokal bleibt:       Chat-Verlauf, Dokumente, Modell, Embeddings
 
 Statt einem eigenen RAG-Index in Paperless-AI nutzt Open Web UI ein **Tool**, das die Paperless-NGX REST API direkt abfragt. Der OCR-Volltext ist bereits in Paperless-NGX vorhanden — kein separates Embedding nötig.
 
-**Tool anlegen:** Open Web UI → Einstellungen → Tools → + Neu → Code einfügen:
-
-```python
-"""
-title: Paperless-NGX Dokumentensuche
-description: Sucht in Paperless-NGX Dokumenten per Volltext und gibt Inhalte als Kontext zurück
-author: home-server
-version: 1.2
-"""
-
-import requests
-from pydantic import BaseModel
-
-class Tools:
-    class Valves(BaseModel):
-        paperless_url: str = "http://192.168.188.130:8000/api"
-        paperless_token: str = ""
-
-    def __init__(self):
-        self.valves = self.Valves()
-
-    def search_paperless(self, query: str) -> str:
-        """
-        Sucht in Paperless-NGX Dokumenten und gibt Inhalte zurück.
-        :param query: Schlüsselwörter für die Dokumentensuche (z.B. "Klimaanlage Rechnung")
-        :return: Dokumenteninhalt als Text
-        """
-        headers = {"Authorization": f"Token {self.valves.paperless_token}"}
-        try:
-            resp = requests.get(
-                f"{self.valves.paperless_url}/documents/",
-                headers=headers,
-                params={"query": query, "page_size": 5},
-                timeout=10
-            )
-            resp.raise_for_status()
-        except Exception as e:
-            return f"Fehler bei Paperless-NGX Abfrage: {e}"
-
-        docs = resp.json().get("results", [])
-
-        if not docs:
-            keywords = [w for w in query.split() if len(w) > 2]
-            seen_ids = set()
-            for keyword in keywords[:4]:
-                for params in [
-                    {"query": keyword, "page_size": 3},
-                    {"title__icontains": keyword, "page_size": 3},
-                ]:
-                    try:
-                        r = requests.get(
-                            f"{self.valves.paperless_url}/documents/",
-                            headers=headers,
-                            params=params,
-                            timeout=10
-                        )
-                        for d in r.json().get("results", []):
-                            if d["id"] not in seen_ids:
-                                docs.append(d)
-                                seen_ids.add(d["id"])
-                    except Exception:
-                        pass
-                if docs:
-                    break
-
-        if not docs:
-            return f"Keine Dokumente zu '{query}' gefunden."
-
-        results = []
-        for doc in docs:
-            title = doc.get("title", "Unbekannt")
-            created = doc.get("created", "")[:10]
-            content = doc.get("content", "").strip()
-
-            if not content:
-                try:
-                    detail = requests.get(
-                        f"{self.valves.paperless_url}/documents/{doc['id']}/",
-                        headers=headers,
-                        timeout=10
-                    )
-                    content = detail.json().get("content", "")
-                except Exception:
-                    content = ""
-
-            results.append(f"**{title}** ({created})\n{content[:1500]}")
-
-        return "\n\n---\n\n".join(results)
-```
+**Tool anlegen:** Open Web UI → Einstellungen → Tools → + Neu → Code aus `Code/PaperlessSearchTool.py` einfügen (aktuelle Version: **v3.0**).
 
 **Nach dem Anlegen:** Tool öffnen → Valves → `paperless_token` mit dem API-Token aus Paperless-NGX befüllen.
+
+### Was v3.0 neu kann
+
+| Feature | v2.0 | v3.0 |
+|---|---|---|
+| Jahres-Datumsfilter (API-seitig) | ❌ nur LLM-Hinweis | ✅ extrahiert Jahr aus Query, filtert per `created__date__gte/lte` |
+| Korrespondenten-Suche | ❌ | ✅ Cache + parallele Suche per `correspondent__id` |
+| Dokumententyp-Filter | ❌ | ✅ Cache + parallele Suche per `document_type__id` |
+| Title-Suche | nur Fallback | ✅ immer parallel zu Volltext |
+| Substring-Matching (Tags/Korrespondenten) | Einzel-Wort exakt | ✅ Substring im gesamten Query |
+| Content-Abruf | sequentiell | ✅ parallel mit ThreadPoolExecutor |
+| Ausgabe | Titel, Datum, Tags | ✅ + Korrespondent, Dokumentenart |
+| `max_docs` Valve | hardcoded 8 | ✅ konfigurierbar (Standard: 8) |
 
 **Nutzen im Chat:** Tool über das Stecker-Icon aktivieren → Frage stellen z.B. *„Suche meine letzte Rechnung von IKEA"*
 
