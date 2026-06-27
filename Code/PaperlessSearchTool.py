@@ -7,9 +7,13 @@ version: 3.0
 
 import re
 import time
+import logging
 import requests
 from pydantic import BaseModel
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+
+logger = logging.getLogger(__name__)
 
 
 class Tools:
@@ -25,16 +29,19 @@ class Tools:
         self._tags_by_name: dict[str, int] = {}
         self._tags_by_id: dict[int, str] = {}
         self._tag_cache_time: float = 0
+        self._tag_lock = Lock()
 
         self._corr_by_name: dict[str, int] = {}
         self._corr_by_id: dict[int, str] = {}
         self._corr_cache_time: float = 0
+        self._corr_lock = Lock()
 
         self._dtype_by_name: dict[str, int] = {}
         self._dtype_by_id: dict[int, str] = {}
         self._dtype_cache_time: float = 0
+        self._dtype_lock = Lock()
 
-        self._cache_ttl: float = 300  # 5 Minuten
+        self._cache_ttl: float = 600  # 10 Minuten
 
     # ------------------------------------------------------------------ #
     #  Interne Hilfsmethoden                                               #
@@ -53,35 +60,39 @@ class Tools:
             )
             resp.raise_for_status()
             return resp.json().get("results", [])
-        except Exception:
+        except Exception as e:
+            logger.error("Paperless metadata load failed (%s): %s", endpoint, e)
             return []
 
     def _load_tags(self) -> None:
-        if self._tags_by_name and (time.time() - self._tag_cache_time) < self._cache_ttl:
-            return
-        items = self._load_cache("tags")
-        if items:
-            self._tags_by_name = {t["name"].lower(): t["id"] for t in items}
-            self._tags_by_id = {t["id"]: t["name"] for t in items}
-            self._tag_cache_time = time.time()
+        with self._tag_lock:
+            if self._tags_by_name and (time.time() - self._tag_cache_time) < self._cache_ttl:
+                return
+            items = self._load_cache("tags")
+            if items:
+                self._tags_by_name = {t["name"].lower(): t["id"] for t in items}
+                self._tags_by_id = {t["id"]: t["name"] for t in items}
+                self._tag_cache_time = time.time()
 
     def _load_correspondents(self) -> None:
-        if self._corr_by_name and (time.time() - self._corr_cache_time) < self._cache_ttl:
-            return
-        items = self._load_cache("correspondents")
-        if items:
-            self._corr_by_name = {c["name"].lower(): c["id"] for c in items}
-            self._corr_by_id = {c["id"]: c["name"] for c in items}
-            self._corr_cache_time = time.time()
+        with self._corr_lock:
+            if self._corr_by_name and (time.time() - self._corr_cache_time) < self._cache_ttl:
+                return
+            items = self._load_cache("correspondents")
+            if items:
+                self._corr_by_name = {c["name"].lower(): c["id"] for c in items}
+                self._corr_by_id = {c["id"]: c["name"] for c in items}
+                self._corr_cache_time = time.time()
 
     def _load_document_types(self) -> None:
-        if self._dtype_by_name and (time.time() - self._dtype_cache_time) < self._cache_ttl:
-            return
-        items = self._load_cache("document_types")
-        if items:
-            self._dtype_by_name = {d["name"].lower(): d["id"] for d in items}
-            self._dtype_by_id = {d["id"]: d["name"] for d in items}
-            self._dtype_cache_time = time.time()
+        with self._dtype_lock:
+            if self._dtype_by_name and (time.time() - self._dtype_cache_time) < self._cache_ttl:
+                return
+            items = self._load_cache("document_types")
+            if items:
+                self._dtype_by_name = {d["name"].lower(): d["id"] for d in items}
+                self._dtype_by_id = {d["id"]: d["name"] for d in items}
+                self._dtype_cache_time = time.time()
 
     def _match_in_query(self, query_lower: str, name_map: dict[str, int]) -> list[int]:
         """Findet alle Einträge aus name_map, deren Name als Substring im Query vorkommt."""
@@ -100,7 +111,8 @@ class Tools:
             )
             resp.raise_for_status()
             return resp.json().get("results", [])
-        except Exception:
+        except Exception as e:
+            logger.error("Paperless document fetch failed (%s): %s", params, e)
             return []
 
     def _fetch_content(self, doc_id: int) -> str:
