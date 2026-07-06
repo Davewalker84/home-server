@@ -60,7 +60,7 @@ flowchart TB
     end
 
     subgraph MACMINI["Mac Mini M4 · Apple M4 · 24 GB · 192.168.188.151"]
-        OLLAMA["Ollama :11434\nqwen3:14b · qwen3:8b\nqwen2.5-coder:14b · nomic-embed-text"]
+        OLLAMA["Ollama :11434\nqwen3:14b · qwen3:8b · qwen3-coder:30b\nqwen2.5-coder:14b · nomic-embed-text"]
     end
 
     subgraph BACKUP["Backup"]
@@ -181,4 +181,4 @@ homeserver-docs/
 - **Kein Cloud-Backup** – die Synology DS218J ist das einzige Backup-Ziel. Bei Totalausfall beider NAS gibt es keinen weiteren Restore-Pfad.
 - **Wibutler ist Single Point of Failure** für alle Smarthome-Geräte. Fällt er aus, ist die Matter-Bridge unterbrochen und Home Assistant verliert die Kontrolle über Lichter und Sensoren.
 - **Wyoming (Whisper + Piper)** läuft als Testumgebung ohne aktive HA-Integration.
-- **Ollama** läuft aktiv auf dem Mac Mini M4 (192.168.188.151) – Modelle: qwen3:14b, qwen3:8b, qwen2.5-coder:14b, nomic-embed-text.
+- **Ollama** läuft aktiv auf dem Mac Mini M4 (192.168.188.151) – Modelle: qwen3:14b, qwen3:8b, qwen3-coder:30b, qwen2.5-coder:14b, nomic-embed-text.

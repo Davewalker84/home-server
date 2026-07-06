@@ -185,7 +185,7 @@ Die Lüftungsanlage ist zwar im Netzwerk, wird aber ausschließlich über ihre e
 **Rolle:** Dedizierter LLM-Inferenz-Server (Ollama), 24/7 Headless  
 **Chip:** Apple M4 · 24 GB Unified Memory
 
-Betreibt Ollama mit den Modellen qwen3:14b, qwen3:8b, qwen2.5-coder:14b und nomic-embed-text. Open Web UI auf dem NAS nutzt den Mac Mini als Inferenz-Backend.
+Betreibt Ollama mit den Modellen qwen3:14b, qwen3:8b, qwen3-coder:30b, qwen2.5-coder:14b und nomic-embed-text. Open Web UI auf dem NAS nutzt den Mac Mini als Inferenz-Backend.
 
 → Vollständige Dokumentation: [Hardware/mac-mini-m4.md](mac-mini-m4.md)
 

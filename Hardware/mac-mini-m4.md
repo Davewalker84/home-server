@@ -135,7 +135,10 @@ ollama pull qwen3:14b
 # Familien-Chat (schnell, einfache Fragen)
 ollama pull qwen3:8b
 
-# Coding (VS Code / Continue)
+# Coding (VS Code / Continue) - primäres Coding-Modell
+ollama pull qwen3-coder:30b
+
+# Coding (VS Code / Continue) - Vorgänger, kleiner/schneller
 ollama pull qwen2.5-coder:14b
 
 # Embeddings für RAG / Paperless
@@ -241,6 +244,7 @@ ollama serve             # Manuell starten (falls nötig)
 | Komponente | RAM |
 |---|---|
 | macOS Headless | ~3,5 GB |
+| qwen3-coder:30b (Q4, MoE 3,3B aktiv) | ~19 GB |
 | qwen3:14b (Q4) | ~8 GB |
 | qwen2.5-coder:14b (Q4) | ~8 GB |
 | nomic-embed-text | ~0,3 GB |
@@ -248,8 +252,11 @@ ollama serve             # Manuell starten (falls nötig)
 
 **Wichtig:** Ollama entlädt Modelle automatisch nach `KEEP_ALIVE` – nie zwei große Modelle gleichzeitig geladen.
 
+> **qwen3-coder:30b** lässt bei ~19 GB Modellgröße nur noch ~1,5 GB Puffer für KV-Cache/Kontext – deutlich weniger Kontextfenster als bei den 14B-Modellen. Nach erstem Praxiseinsatz per `ollama ps` / `top -l 1 | grep PhysMem` prüfen.
+
 ### Kontextfenster bei 24 GB
 
+- **qwen3-coder:30b:** stark eingeschränktes Kontextfenster (KV-Cache-Puffer nur ~1,5 GB)
 - **qwen3:14b:** ~130K Token Kontext möglich (12,5 GB für KV-Cache)
 - **qwen3:8b:** Mehr Kontext bei weniger RAM-Verbrauch
 
@@ -277,7 +284,7 @@ präzise und verständlich für alle Familienmitglieder.
 |---|---|---|
 | Familien-Chat | qwen3:14b | OFF (via Open Web UI System-Prompt) |
 | Schnelle Fragen | qwen3:8b | OFF (via Open Web UI System-Prompt) |
-| Coding (Continue) | qwen2.5-coder:14b | – |
+| Coding (Continue) | qwen3-coder:30b (primär) / qwen2.5-coder:14b (Fallback) | – |
 | Paperless-AI (Klassifizierung + RAG) | qwen2.5:7b | kein Thinking Mode (Vorgänger-Generation) |
 | Dokument-RAG | qwen3:14b + nomic-embed-text | OFF (via Open Web UI System-Prompt) |
 
