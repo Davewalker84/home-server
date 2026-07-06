@@ -288,4 +288,4 @@ Statt einem eigenen RAG-Index in Paperless-AI nutzt Open Web UI ein **Tool**, da
 
 ## Geplante Erweiterungen
 
-- [ ] Continue in VS Code vollständig einrichten
+- [x] Continue in VS Code vollständig einrichten → siehe [Hardware/mac-mini-m4.md](../../Hardware/mac-mini-m4.md#vs-code-continue-integration)

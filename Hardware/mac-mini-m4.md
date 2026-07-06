@@ -148,6 +148,37 @@ ollama pull nomic-embed-text
 ollama pull qwen2.5:7b
 ```
 
+## VS Code Continue-Integration
+
+Config-Datei auf dem MacBook: `~/.continue/config.yaml`
+
+Voraussetzung: Ollama auf dem Mac Mini muss netzwerk-offen sein (`OLLAMA_HOST=0.0.0.0`, siehe oben) und per `curl http://192.168.188.151:11434/api/tags` vom MacBook erreichbar sein.
+
+```yaml
+models:
+  - name: Qwen3 Coder 30B (Mac Mini)
+    provider: ollama
+    model: qwen3-coder:30b
+    apiBase: http://192.168.188.151:11434
+    roles: [chat, edit]
+
+  - name: Qwen2.5 Coder 7B (LM Studio)
+    provider: openai
+    model: qwen2.5-coder-7b-instruct-mlx
+    apiBase: http://localhost:1234/v1
+    apiKey: lm-studio
+    roles: [chat, edit]
+
+  - name: Autodetect (Ollama)
+    provider: ollama
+    model: AUTODETECT
+    roles: [autocomplete]
+```
+
+- **Primär (Coding):** `qwen3-coder:30b` über Ollama auf dem Mac Mini – größtes Modell, volle Coding-Power, aber eingeschränktes Kontextfenster (siehe RAM-Planung oben).
+- **Fallback/schnell:** `qwen2.5-coder-7b-instruct-mlx` lokal über LM Studio auf dem MacBook – für schnelle/offline Anfragen, wenn der Mac Mini nicht erreichbar ist oder weniger Kontext nötig ist.
+- **Autocomplete:** lokales Ollama (`AUTODETECT`) auf dem MacBook, unabhängig vom Mac Mini.
+
 ### qwen3-nothink: Custom Modell ohne Thinking Mode
 
 Paperless-AI und andere Dienste die den Prompt nicht kontrollieren brauchen ein Modell bei dem Thinking dauerhaft deaktiviert ist. Das Custom Modell erbt `qwen3:8b` vollständig – kein Download nötig.
