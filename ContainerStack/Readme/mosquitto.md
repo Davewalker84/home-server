@@ -173,6 +173,18 @@ docker exec mosquitto chown -R mosquitto:mosquitto /mosquitto/data /mosquitto/lo
 docker restart mosquitto
 ```
 
+### Garagentor verschwindet nach Mosquitto-Neustart/-Redeploy aus HA
+
+**Symptom:** `cover.garage_door_garage_door` wird nach einem Mosquitto-Redeploy als „missing/not currently available" gemeldet, obwohl die HCPBridge über `http://hcpbridge.local` weiterhin normal steuerbar ist. Details/Diagnose siehe `Hardware/garagentor.md`.
+
+**Bekannte Ursache:** Die HCPBridge sendet ihre MQTT-Discovery-Konfiguration nur beim Bus-Scan neu, nicht bei jedem MQTT-Reconnect. Gehen die *retained* Discovery-Nachrichten auf dem Broker verloren (z.B. weil `eclipse-mosquitto:latest` bei einem Redeploy unbemerkt eine neue Version zieht, deren Persistenzformat inkompatibel zum alten `persistence.db` ist), verschwindet die Entität aus HA, bis am ProMatic 4 erneut ein Bus-Scan durchgeführt wird (DIP-Schalter kurz umlegen).
+
+**Bekannter Config-Drift (Stand: aktueller Deploy):** Der aktuell in Portainer deployte Stack unterscheidet sich vom oben dokumentierten Compose-File — er definiert zusätzlich einen `configs.mosquitto_config_file`-Block (`allow_anonymous false`, `password_file`), der aber im `mosquitto`-Service **nicht referenziert** ist und deshalb nicht greift. Der Container läuft nach wie vor mit der alten, oben dokumentierten `mosquitto.conf` (anonym, Port 9883 http_api). Das ist vermutlich nicht die Ursache des Garagentor-Ausfalls, aber ein offener Punkt: aktuell ist nicht eindeutig, welche Config wirklich aktiv ist. Vor einer bewussten Entscheidung für die schärfere Auth (`allow_anonymous false`) beachten, dass die Hichi IR-Leseköpfe (Tasmota, `DVES_USER`) laut diesem Dokument keine eigenen Credentials unterstützen und dafür ein passender `passwd`-Eintrag nötig wäre, sonst würden sie den Broker nicht mehr erreichen.
+
+**Empfehlung zur Robustheit:**
+- `image: eclipse-mosquitto:latest` auf eine feste Version pinnen (z.B. `eclipse-mosquitto:2.0.18`), damit ein Redeploy nicht unbemerkt die Mosquitto-Version wechselt.
+- Vor jedem Redeploy prüfen, ob `persistence.db` in `/mosquitto/data/` tatsächlich wächst/beschreibbar ist (siehe Permissions-Troubleshooting oben) — sonst gehen retained Discovery-Daten bei jedem Neustart verloren, nicht nur bei einem Redeploy.
+
 ---
 
 ## Performance & Limits
