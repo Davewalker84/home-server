@@ -256,6 +256,7 @@ Was lokal bleibt:       Chat-Verlauf, Dokumente, Modell, Embeddings
 | „Keine Quellen gefunden" | „Embedding und Retrieval umgehen" deaktiviert | In Admin → Websuche aktivieren |
 | Passwort vergessen | – | `docker volume rm open-webui-data` + Stack neu starten (löscht alle Daten) |
 | `docker compose` → „no config file" | Falsches Verzeichnis | Immer mit `-f ~/docker/ai-stack/docker-compose.yml` aufrufen |
+| Antwort zeigt vollständige Token-Stats, aber kein sichtbarer Text (bei allen Modellen) | Vermutlich Reasoning-Rendering-Regression in Open WebUI v0.10.2 (Release 2026-07-01, siehe [Issue #26072](https://github.com/open-webui/open-webui/issues/26072) / [Discussion #13076](https://github.com/open-webui/open-webui/discussions/13076)) und/oder Cold-Start nach `OLLAMA_KEEP_ALIVE`-Entladung – trat am 2026-07-09 einmalig auf, war beim nächsten Versuch ohne Änderung wieder normal | Bisher nur einmalig aufgetreten, kein Fix nötig. Bei erneutem Auftreten: prüfen ob Antworttext in einem eingeklappten "Thinking"-Bereich versteckt ist; falls ja, Downgrade auf letzte funktionierende Version erwägen und Image auf festen Tag pinnen (statt `:main`) |
 
 ---
 
