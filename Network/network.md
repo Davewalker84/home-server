@@ -8,13 +8,14 @@ Dokumentation der physischen und logischen Netzwerkinfrastruktur.
 
 | Gerät | Modell | IP | Funktion |
 |---|---|---|---|
-| Router | FritzBox 7530 AX | 192.168.188.1 | Router, DHCP, DNS-Relay, WireGuard |
+| Router | FRITZ!Box 5690 Pro | 192.168.188.1 | Router, DHCP, DNS-Relay, WireGuard |
 | Switch 1 | 8-Port unmanaged | — | LAN-Verteilung EG / OG |
 | Switch 2 | 8-Port unmanaged | — | LAN-Verteilung EG / OG |
+| Switch 3 | BrosTrend 8× 2.5 Gigabit (managed) | noch nicht dokumentiert | LAN-Verteilung, kaskadiert hinter einem der 8-Port-Switches |
 
 ---
 
-## FritzBox 7530 AX
+## FRITZ!Box 5690 Pro
 
 **Weboberfläche:** http://192.168.188.1
 
@@ -75,7 +76,17 @@ Nach dem Verbindungsaufbau verhält sich das Smartphone wie ein lokales Gerät �
 
 ## Switches
 
-Zwei 8-Port-Switches (unmanaged) verteilen das LAN im Haus. Da sie unmanaged sind, gibt es keine VLAN-Konfiguration – alle Geräte befinden sich im gleichen Broadcast-Domain.
+Drei Switches verteilen das LAN im Haus:
+
+| Switch | Typ | Anbindung |
+|---|---|---|
+| Switch 1 | 8-Port, unmanaged | hinter der FritzBox |
+| Switch 2 | 8-Port, unmanaged | hinter der FritzBox |
+| Switch 3 | BrosTrend 8× 2.5 Gbit/s, managed (statische Link-Aggregation, VLAN) | kaskadiert hinter einem der 8-Port-Switches |
+
+Der BrosTrend-Switch unterstützt VLANs und statische Link-Aggregation. Beides ist **nicht konfiguriert**: Das Netz bleibt flach, alle Geräte befinden sich in derselben Broadcast-Domain.
+
+> Der BrosTrend hängt hinter einem 8-Port-Switch. Sein Uplink ist deshalb höchstens so schnell wie dieser Switch. Die vollen 2.5 Gbit/s gibt es nur zwischen Geräten, die direkt am BrosTrend hängen.
 
 ### Angeschlossene Geräte
 
@@ -92,7 +103,9 @@ Zwei 8-Port-Switches (unmanaged) verteilen das LAN im Haus. Da sie unmanaged sin
 
 ### Bekannte Schwächen
 
-- **Keine VLANs ⚠️:** IoT-Geräte (Buderus, Wallbox, Wibutler) befinden sich im selben Netz wie Server und Clients. Eine Kompromittierung eines IoT-Geräts hätte direkten Zugriff auf alle anderen Geräte. Akzeptiertes Risiko bei aktuellem Aufwand.
+- **Keine VLANs ⚠️:** IoT-Geräte (Buderus, Wallbox, Wibutler) befinden sich im selben Netz wie Server und Clients. Eine Kompromittierung eines IoT-Geräts hätte direkten Zugriff auf alle anderen Geräte. Akzeptiertes Risiko bei aktuellem Aufwand. Der BrosTrend könnte VLANs, die beiden 8-Port-Switches nicht.
+- **Kaskadierung:** Der BrosTrend hängt hinter einem der 8-Port-Switches. Fällt dieser aus, ist auch alles am BrosTrend offline.
+- **Management-IP des BrosTrend nicht dokumentiert:** IP und Zugangsdaten der Web-UI nachtragen.
 - **Keine redundante Uplink-Verkabelung:** Fällt ein Switch aus, sind alle daran hängenden Geräte offline.
 
 ### Smart Meter Gateway – IPv6-Sonderfall

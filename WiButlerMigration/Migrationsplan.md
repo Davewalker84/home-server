@@ -2,7 +2,7 @@
 
 Ablösung des **Wibutler Pro 2nd Gen** (Matter Bridge) durch eine direkte Anbindung der Eltako-Serie-14-Aktoren und der Zigbee-Geräte an Home Assistant.
 
-→ Zielarchitektur: [Zielarchitektur.mmd](Zielarchitektur.mmd)
+→ Zielarchitektur: [Zielarchitektur.drawio.svg](Zielarchitektur.drawio.svg)
 
 ---
 
@@ -328,8 +328,8 @@ Zigbee-Netze lassen sich nicht übertragen, jedes Gerät muss neu gepairt werden
 
 **Repo `home-server`:**
 
-- [ ] `Architecture/HomeServer.mmd`: Wibutler und matter-server entfernen. Neu: FAM14 (USB), Eltako-Bus, Heizung, SLZB-06, Zigbee2MQTT. Vorlage ist [Zielarchitektur.mmd](Zielarchitektur.mmd).
-- [ ] `README.md`: Mermaid-Diagramm, IP-Tabelle (SLZB-06 neu, Wibutler raus), Schwächen.
+- [ ] `Architecture/HomeServer.drawio.svg`: Wibutler und matter-server entfernen. Neu: FAM14 (USB), Eltako-Bus, Heizung, SLZB-06, Zigbee2MQTT. Vorlage ist [Zielarchitektur.drawio.svg](Zielarchitektur.drawio.svg).
+- [ ] `README.md`: IP-Tabelle (SLZB-06 neu, Wibutler raus), Schwächen. Das Diagramm kommt aus `Architecture/HomeServer.drawio.svg`.
 - [ ] `Hardware/geraete.md`: Den Wibutler-Abschnitt ersetzen durch „Eltako Serie 14 / EnOcean" und „Zigbee". Die Schwächen neu bewerten.
 - [ ] `ContainerStack/Readme/home-assistant.md`: Integrationen, Container-Tabelle und Neustart-Reihenfolge (zigbee2mqtt statt matter-server) anpassen, „Heizung nicht integriert" streichen.
 - [ ] `Architecture/overview.md`: Smarthome-Schicht und physische Topologie.

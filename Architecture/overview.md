@@ -20,7 +20,7 @@ Das Setup folgt drei Grundsätzen:
 
 Das Heimnetz ist ein **flaches Layer-2-Netzwerk** ohne VLANs. Alle Geräte befinden sich im Subnetz `192.168.188.0/24`, die FritzBox verwaltet DHCP.
 
-Bewusste Entscheidung gegen VLANs: Der administrative Aufwand mit unmanaged Switches wäre unverhältnismäßig. IoT-Geräte (Wibutler, Wallbox) sind vertrauenswürdig genug für ein gemeinsames Segment.
+Bewusste Entscheidung gegen VLANs: IoT-Geräte (Wibutler, Wallbox) sind vertrauenswürdig genug für ein gemeinsames Segment. Der BrosTrend 2.5G-Switch beherrscht zwar VLAN und statische Link-Aggregation, beides ist aber nicht konfiguriert. Durchgängige VLANs würden zusätzlich den Austausch der beiden unmanaged 8-Port-Switches erfordern.
 
 ### DNS
 
@@ -41,9 +41,10 @@ WireGuard läuft als nativer FritzBox-Dienst – keine extra VM, kein Docker-Con
 ```
 Internet
     │ (PPPoE)
-FritzBox 7530 AX  ──── Wibutler Pro 2nd Gen
+FRITZ!Box 5690 Pro  ──── Wibutler Pro 2nd Gen
     │
 2× Switch 8-Port (unmanaged)
+    ├── BrosTrend 8× 2.5G-Switch (managed, kaskadiert)
     ├── UGREEN DXP4800
     ├── Synology DS218J
     ├── LAN-Dosen (alle Räume)

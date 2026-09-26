@@ -6,12 +6,12 @@ Anleitung und Referenz für den Remote-Zugriff ins Heimnetz via WireGuard VPN.
 
 ## Architektur
 
-WireGuard läuft als nativer Dienst auf der FritzBox 7530 AX. Es ist der **einzige** Weg, von außen auf das Heimnetz zuzugreifen.
+WireGuard läuft als nativer Dienst auf der FRITZ!Box 5690 Pro. Es ist der **einzige** Weg, von außen auf das Heimnetz zuzugreifen.
 
 ```
 Smartphone / Tablet (außerhalb)
     └── WireGuard-Tunnel (verschlüsselt)
-            └── FritzBox 7530 AX (WireGuard-Server)
+            └── FRITZ!Box 5690 Pro (WireGuard-Server)
                     └── Heimnetz 192.168.188.0/24
                             ├── Home Assistant    :8123
                             ├── UGOS App          (Fotos)

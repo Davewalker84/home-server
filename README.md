@@ -7,98 +7,9 @@ Ziel: Nachvollziehbarkeit, schnelle Fehlersuche und sicherer Wiederaufbau.
 
 ## Architektur-Übersicht
 
-```mermaid
-flowchart TB
+![Architektur-Übersicht](Architecture/HomeServer.drawio.svg)
 
-    subgraph EXTERN["Extern (außerhalb Heimnetz)"]
-        PHONE["Smartphone / Tablet\nHA App · UGOS App"]
-    end
-
-    subgraph HEIMNETZ["Heimnetzwerk · 192.168.188.0/24"]
-        FB["FritzBox 7530 AX\nRouter · DHCP · WireGuard-Server\nDSL-Einwahl via PPPoE"]
-        AGH["AdGuard Home\nDNS primär"]
-        WB["Wibutler Pro 2nd Gen\nMatter Bridge"]
-
-        subgraph SWITCHES["2× Switch 8-Port (unmanaged)"]
-            SW_DEV["LAN-Dosen (alle Räume)\nBuderus Lüftungsanlage\nGarage-Repeater\nSynology · UGREEN"]
-        end
-    end
-
-    subgraph NAS["UGREEN DXP4800 · N100 · 8 GB RAM · 192.168.188.130"]
-        subgraph UGOS["UGOS Docker"]
-            PT["Portainer :9444"]
-            PL["Paperless-NGX :8000\npostgres · redis · gotenberg · tika"]
-            PHOTO["UGOS Foto App\nFoto-Backup Familie"]
-        end
-        subgraph PSTACK["Portainer · Stacks"]
-            HA["Home Assistant :8123"]
-            MS["matter-server"]
-            JF["Jellyfin :8096"]
-            WY["Wyoming (Test)\nWhisper · Piper"]
-            OWU["Open Web UI :3001"]
-            SRX["SearXNG :8080 (intern)"]
-        end
-        subgraph PCONT["Portainer · Container"]
-            EUFY["eufy-security-ws"]
-            GO2["go2rtc"]
-        end
-        subgraph STORE["Storage"]
-            V1["volume1 · HDD RAID5 · 10,8 TB\nFilme · Musik · paperless-data · Fotos"]
-            V2["volume2 · SSD · 256 GB\nDocker-Daten"]
-        end
-    end
-
-    subgraph GERAETE["Geräte & Sensoren"]
-        LIGHTS["Lichter · Schalter"]
-        SENS["Sensoren\nTemp · Feuchte"]
-        WALLBOX["Huawei Wallbox 22 kW\nOCPP"]
-        ID7["VW ID.7"]
-        CAM["Eufy E340\nGarage"]
-        EPSON["Epson WF-3825"]
-        SMGW["Smart Meter Gateway\nEMH · NetzeBW HAN\nIPv6 · Digest Auth"]
-        KLIMA["Mitsubishi Electric\nMXZ-2F53VF4 (Multi-Split)\nMSZ-AY20VGKP Wohnzimmer\nMSZ-AY35VGKP Büro"]
-    end
-
-    subgraph MACMINI["Mac Mini M4 · Apple M4 · 24 GB · 192.168.188.151"]
-        OLLAMA["Ollama :11434\nqwen3:14b · qwen3:8b · qwen3-coder:30b\nqwen2.5-coder:14b · nomic-embed-text"]
-    end
-
-    subgraph BACKUP["Backup"]
-        SYN["Synology DS218J · 192.168.188.135\nRsync · Montag · 1h"]
-    end
-
-    PHONE -. "WireGuard VPN\n(HA App / UGOS App)" .-> FB
-    FB -->|DNS| AGH
-    FB -->|LAN direkt| WB
-    FB --> SWITCHES
-    SWITCHES --> NAS
-    SWITCHES --> SYN
-    SWITCHES --> MACMINI
-
-    OWU -->|Ollama API :11434| OLLAMA
-    OWU --> SRX
-
-    PT -->|verwaltet| PSTACK
-    PT -->|verwaltet| PCONT
-
-    HA -->|Matter Protocol| MS
-    MS -->|Matter| WB
-    WB --> LIGHTS
-    WB --> SENS
-    HA -->|OCPP via HACS| WALLBOX
-    WALLBOX --- ID7
-    CAM -->|RTSP via Repeater| EUFY
-    EUFY --> GO2
-    GO2 -->|Stream| HA
-    EPSON -->|Scan| PL
-    SMGW -->|REST Digest / HAN| HA
-    HA <-->|MELCloud API (HACS)| KLIMA
-
-    PL <--> V1
-    PL <--> V2
-    JF --> V1
-    PHOTO --> V1
-```
+> Quelle: [Architecture/HomeServer.drawio.svg](Architecture/HomeServer.drawio.svg). Bearbeiten in VS Code mit der Extension **Draw.io Integration** (`hediet.vscode-drawio`).
 
 ---
 
@@ -115,7 +26,7 @@ flowchart TB
 | Open Web UI | http://192.168.188.130:3001 | UGREEN DXP4800 | Portainer Stack (ai-stack) |
 | SearXNG | http://192.168.188.130:8080 (intern) | UGREEN DXP4800 | Portainer Stack (ai-stack) |
 | Synology DSM | http://192.168.188.135:5000 | Synology DS218J | — |
-| FritzBox | http://192.168.188.1 | FritzBox 7530 AX | — |
+| FritzBox | http://192.168.188.1 | FRITZ!Box 5690 Pro | — |
 
 > Alle Services sind **ausschließlich im Heimnetz** erreichbar.  
 > Remote-Zugriff erfolgt ausnahmslos über **WireGuard VPN** (konfiguriert auf der FritzBox).
@@ -126,10 +37,11 @@ flowchart TB
 
 | Gerät | IP | IP-Vergabe |
 |---|---|---|
-| FritzBox 7530 AX | 192.168.188.1 | statisch (Router) |
+| FRITZ!Box 5690 Pro | 192.168.188.1 | statisch (Router) |
 | UGREEN DXP4800 | 192.168.188.130 | DHCP-Reservierung (FritzBox) |
 | Mac Mini M4 | 192.168.188.151 | DHCP-Reservierung (FritzBox) |
 | Synology DS218J | 192.168.188.135 | DHCP-Reservierung (FritzBox) |
+| BrosTrend 8× 2.5G-Switch | noch nicht dokumentiert | managed Switch mit Web-UI |
 | Wibutler Pro 2nd Gen | — | DHCP (direkt an FritzBox) |
 | Smart Meter Gateway (EMH) | `2003:de:9f37:1c00:215:3bff:fee4:1f5c` | IPv6-only, kein DHCP/IPv4 |
 
@@ -155,7 +67,7 @@ homeserver-docs/
 ├── README.md                           ← diese Datei
 ├── architecture/
 │   ├── overview.md                     ← Architektur in Prosa
-│   └── system-architecture.mermaid     ← Diagramm-Quelldatei
+│   └── HomeServer.drawio.svg           ← Architektur-Diagramm (draw.io)
 ├── hardware/
 │   ├── ugreen-dxp4800.md
 │   ├── network.md

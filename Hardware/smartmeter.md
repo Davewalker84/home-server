@@ -22,7 +22,7 @@ Dokumentation des Smart Meter Gateways (SMGW) von NetzeBW, eingebunden über die
 
 ## Physische Anbindung
 
-Das SMGW ist über ein LAN-Kabel an einen der beiden 8-Port-Switches im Heimnetz angeschlossen. Die Verbindung nutzt die **HAN-Schnittstelle** des Gateways – der physische Anschluss am Gerät ist ein RJ45-Port.
+Das SMGW ist über ein LAN-Kabel an einen der 8-Port-Switches im Heimnetz angeschlossen. Die Verbindung nutzt die **HAN-Schnittstelle** des Gateways – der physische Anschluss am Gerät ist ein RJ45-Port.
 
 ```
 Smart Meter Gateway (HAN-Port)
