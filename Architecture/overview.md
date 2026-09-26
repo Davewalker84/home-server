@@ -107,10 +107,13 @@ Paperless-AI (NAS, :3002)      →  Ollama :11434 (Mac Mini M4)
 | qwen3:14b | ~8 GB | Familien-Chat, Dokument-RAG |
 | qwen3:8b | ~5 GB | Schnelle Fragen |
 | qwen2.5:7b | ~4,5 GB | Paperless-AI (kein Thinking Mode) |
-| qwen2.5-coder:14b | ~8 GB | Coding (VS Code / Continue) |
+| qwen2.5-coder:14b | ~8 GB | Coding (VS Code / Continue, Fallback) |
+| qwen3-coder:30b | ~19 GB | Coding (VS Code / Continue, primär) |
+| gemma4:26b-mlx | ~16 GB | Paperless-Chat (Dokument-RAG) |
+| qwen3.8:27b-mlx | ~16–18 GB | Neueres Qwen (Einsatzzweck offen) |
 | nomic-embed-text | ~0,3 GB | Embeddings (RAG) |
 
-Ollama entlädt Modelle nach 5 Minuten Inaktivität (`OLLAMA_KEEP_ALIVE=5m`). Zwei große 14B-Modelle werden nie gleichzeitig geladen.
+Ollama entlädt Modelle nach 5 Minuten Inaktivität (`OLLAMA_KEEP_ALIVE=5m`). Große Modelle (14B und größer) werden nie gleichzeitig geladen – bei 24 GB passt zusätzlich zu macOS nur eines der 26–30B-Modelle. Die Ollama-Umgebungsvariablen werden per LaunchAgent bei jedem Login gesetzt (Details in [mac-mini-m4.md](../Hardware/mac-mini-m4.md)).
 
 Details: Siehe [Hardware/mac-mini-m4.md](../Hardware/mac-mini-m4.md)
 
@@ -216,7 +219,7 @@ Empfehlung für die Zukunft: Kritische Daten (Paperless-Archiv) zusätzlich vers
 | Dienst | Status | Hinweis |
 |---|---|---|
 | Wyoming (Whisper + Piper) | Test | Spracherkennung und TTS für HA – noch keine aktive Integration |
-| Ollama | Aktiv (Mac Mini M4) | Läuft auf 192.168.188.151:11434 – qwen3:14b, qwen3:8b, qwen2.5:7b, qwen2.5-coder:14b, nomic-embed-text |
+| Ollama | Aktiv (Mac Mini M4) | Läuft auf 192.168.188.151:11434 – qwen3:14b, qwen3:8b, qwen3-coder:30b, qwen3.8:27b-mlx, gemma4:26b-mlx, qwen2.5:7b, qwen2.5-coder:14b, nomic-embed-text (vollständige Liste: [mac-mini-m4.md](../Hardware/mac-mini-m4.md)) |
 | Open Web UI | Aktiv (Mac Mini :3001) | Familien-Chat, Web-Suche via SearXNG, Paperless-Dokument-Chat per Tool |
 | SearXNG | Aktiv (Mac Mini, intern) | Anonyme Websuche für Open Web UI – kein direkter Zugriff von außen |
 | Paperless-AI | Aktiv (NAS :3002) | KI-Klassifizierung für Paperless-NGX (Auto-Tagging), RAG deaktiviert |

@@ -112,19 +112,79 @@ Web UI: http://192.168.188.151:3001
 
 ### Netzwerk-Konfiguration (Pflicht für LAN-Zugriff)
 
+`launchctl setenv` überlebt **keinen Reboot**. Damit die Ollama-Variablen nach jedem Neustart wieder gesetzt sind, setzt ein LaunchAgent sie bei jedem Login und startet den Ollama-Dienst danach neu.
+
+**1. Terminal vorbereiten und Skript anlegen**
+
+`setopt no_banghist` verhindert in zsh den Fehler `event not found` durch das `!` in `#!/bin/zsh`. Die Zeile `EOF` muss ganz links stehen.
+
 ```bash
-# Ollama für Netzwerkzugriff öffnen (lauscht sonst nur auf localhost)
+mkdir -p ~/scripts
+setopt no_banghist
+
+cat > ~/scripts/ollama-env.sh << 'EOF'
+#!/bin/zsh
 launchctl setenv OLLAMA_HOST "0.0.0.0"
-
-# Modell nach Inaktivität entladen (RAM freigeben)
 launchctl setenv OLLAMA_KEEP_ALIVE "5m"
+launchctl setenv OLLAMA_FLASH_ATTENTION 1
+launchctl setenv OLLAMA_KV_CACHE_TYPE q8_0
+/opt/homebrew/bin/brew services restart ollama
+EOF
+chmod +x ~/scripts/ollama-env.sh
+```
 
-# Ollama neu starten
-brew services restart ollama
+| Variable | Wirkung |
+|---|---|
+| `OLLAMA_HOST=0.0.0.0` | Ollama lauscht im LAN (sonst nur localhost) |
+| `OLLAMA_KEEP_ALIVE=5m` | Modell nach 5 Min Inaktivität entladen (RAM freigeben) |
+| `OLLAMA_FLASH_ATTENTION=1` | Flash Attention auf Apple Silicon |
+| `OLLAMA_KV_CACHE_TYPE=q8_0` | KV-Cache 8 Bit, weniger Unified-Memory-Verbrauch |
+
+**2. LaunchAgent anlegen und laden**
+
+```bash
+cat > ~/Library/LaunchAgents/com.davidmarotzke.ollama-env.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.davidmarotzke.ollama-env</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/Users/davidmarotzke/scripts/ollama-env.sh</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/ollama-env.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/ollama-env.log</string>
+</dict>
+</plist>
+EOF
+
+plutil -lint ~/Library/LaunchAgents/com.davidmarotzke.ollama-env.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.davidmarotzke.ollama-env.plist
+```
+
+Plist später ändern: vorher `launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.davidmarotzke.ollama-env.plist`, danach erneut `bootstrap`.
+
+**3. Prüfen**
+
+```bash
+launchctl getenv OLLAMA_HOST          # 0.0.0.0
+launchctl getenv OLLAMA_KEEP_ALIVE    # 5m
+launchctl getenv OLLAMA_FLASH_ATTENTION   # 1
+launchctl getenv OLLAMA_KV_CACHE_TYPE     # q8_0
+cat /tmp/ollama-env.log               # Ausgabe des letzten Laufs
 
 # Testen (von Mac Mini oder NAS)
 curl http://192.168.188.151:11434/api/tags
 ```
+
+> Der automatische Login (siehe oben) ist Voraussetzung: Der LaunchAgent läuft erst nach dem Login des Benutzers.
 
 ### Modelle
 
@@ -146,7 +206,24 @@ ollama pull nomic-embed-text
 
 # Paperless-AI RAG Chat (kein Thinking Mode, stabiler als qwen3-nothink)
 ollama pull qwen2.5:7b
+
+# Neueres Qwen (MLX, ~27B) – Einsatzzweck noch offen
+ollama pull qwen3.8:27b-mlx
 ```
+
+Zusätzlich installiert (Stand 2026-09-26): `qwen3.5:9b-mlx`, `gemma4:26b-mlx` (für Paperless-Chat geklont, siehe [ai-stack.md](../ContainerStack/Readme/ai-stack.md)), `llama3.1:8b`. Ollama-Version: 0.30.10.
+
+### Ollama updaten
+
+```bash
+brew update
+brew upgrade ollama
+brew services restart ollama
+ollama --version
+ollama list
+```
+
+Das Update tauscht nur das Binary. Modelle und Custom-Modelle (`~/.ollama`), die `launchctl`-Variablen (LaunchAgent, siehe oben) und Open Web UI (eigenes Docker-Volume) bleiben unberührt. Vorher/nachher `ollama list` vergleichen. Neue Modelle zuerst mit `ollama pull` versuchen – ein Update ist nur nötig, wenn die Meldung „model architecture not supported" bzw. „server version too old" kommt.
 
 ## VS Code Continue-Integration
 
@@ -278,6 +355,9 @@ ollama serve             # Manuell starten (falls nötig)
 | qwen3-coder:30b (Q4, MoE 3,3B aktiv) | ~19 GB |
 | qwen3:14b (Q4) | ~8 GB |
 | qwen2.5-coder:14b (Q4) | ~8 GB |
+| gemma4:26b-mlx | ~16 GB |
+| qwen3.8:27b-mlx | ~16–18 GB (geschätzt, per `ollama ps` prüfen) |
+| qwen3.5:9b-mlx | ~9 GB |
 | nomic-embed-text | ~0,3 GB |
 | KV-Cache (8K Kontext) | ~1–2 GB |
 
@@ -346,7 +426,9 @@ ssh davidmarotzke@192.168.188.151 "top -l 1 | grep PhysMem"
 
 | Problem | Ursache | Lösung |
 |---|---|---|
-| Ollama nicht erreichbar vom NAS | Lauscht nur auf localhost | `launchctl setenv OLLAMA_HOST "0.0.0.0"` + Neustart |
+| Ollama nicht erreichbar vom NAS | Lauscht nur auf localhost | `launchctl setenv OLLAMA_HOST "0.0.0.0"` + Neustart – dauerhaft via LaunchAgent (siehe Netzwerk-Konfiguration) |
+| `launchctl getenv OLLAMA_*` leer, Modell bleibt geladen / Ollama nur lokal erreichbar | `launchctl setenv` überlebt keinen Reboot, LaunchAgent fehlt oder nicht geladen | LaunchAgent `com.davidmarotzke.ollama-env` prüfen (`launchctl list \| grep ollama-env`), Log: `/tmp/ollama-env.log` |
+| `event not found` beim Einfügen von Skripten ins Terminal | zsh deutet `!` (z.B. `#!/bin/zsh`) als History-Expansion | `setopt no_banghist` vor dem Einfügen |
 | Qwen3 zeigt Thinking-Text in Open Web UI | Thinking Mode aktiv | `/no_think` in Open Web UI System-Prompt |
 | Paperless-AI RAG Chat extrem langsam | Thinking Mode / Cold Start nach KEEP_ALIVE | `qwen2.5:7b` verwenden (kein Thinking Mode) |
 | Paperless-AI zeigt "Server: Offline" mitten im Chat | qwen3-nothink Cold Start > RAG Timeout | `qwen2.5:7b` verwenden (schnellerer Load) |

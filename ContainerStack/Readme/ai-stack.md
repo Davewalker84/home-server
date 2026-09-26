@@ -180,6 +180,7 @@ Nach dem ersten Start unter **Admin Panel → Einstellungen → Websuche**:
 | Schnelle Fragen | qwen3:8b | OFF |
 | Dokument-RAG + Paperless-Chat | gemma4:26b-mlx (geklont) | – |
 | Paperless-AI (Auto-Tagging) | qwen2.5:7b (via Paperless-AI Stack) | – |
+| Neueres Qwen (Einsatzzweck offen, ~27B) | qwen3.8:27b-mlx | – |
 
 Qwen3 Thinking Mode im System-Prompt deaktivieren:  
 `Admin Panel → Einstellungen → Allgemein → System-Prompt → /no_think`
@@ -213,14 +214,15 @@ Beim Aufrufen des Tools:
 
 ## Ollama Performance (Mac Mini M4 / Apple Silicon)
 
-```bash
-# Einmalig auf dem Mac Mini setzen – beschleunigt Attention-Berechnung auf Apple Silicon
-launchctl setenv OLLAMA_FLASH_ATTENTION 1
-launchctl setenv OLLAMA_KV_CACHE_TYPE q8_0
+Die Variablen `OLLAMA_FLASH_ATTENTION=1` und `OLLAMA_KV_CACHE_TYPE=q8_0` (zusammen mit `OLLAMA_HOST` und `OLLAMA_KEEP_ALIVE`) werden per LaunchAgent bei jedem Login gesetzt und überleben damit Reboots. Einrichtung und Fehlersuche: [Hardware/mac-mini-m4.md](../../Hardware/mac-mini-m4.md#netzwerk-konfiguration-pflicht-für-lan-zugriff).
 
-# Danach Ollama neu starten
-launchctl stop com.ollama.ollama 2>/dev/null || pkill ollama
-ollama serve &
+```bash
+# Prüfen, ob die Variablen aktiv sind
+launchctl getenv OLLAMA_FLASH_ATTENTION
+launchctl getenv OLLAMA_KV_CACHE_TYPE
+
+# Manuell neu setzen + Ollama neu starten (bei Bedarf, ohne Reboot)
+~/scripts/ollama-env.sh
 ```
 
 > `OLLAMA_FLASH_ATTENTION=1` aktiviert Flash Attention auf dem M4 und reduziert den KV-Cache-Speicher spürbar. `q8_0` komprimiert den KV-Cache auf 8 Bit – geringer Qualitätsverlust, deutlich weniger Unified Memory Verbrauch.
@@ -252,7 +254,7 @@ Was lokal bleibt:       Chat-Verlauf, Dokumente, Modell, Embeddings
 | SearXNG startet nicht | `cap_drop: ALL` in compose | Zeilen `cap_drop`/`cap_add` entfernen |
 | SearXNG kein JSON | `settings.yml` fehlt `- json` | In `~/docker/searxng/settings.yml` ergänzen, Container neu starten |
 | `bash` nicht gefunden | SearXNG hat kein bash | `sh` statt `bash` verwenden |
-| Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt | Auf Mac Mini: `launchctl setenv OLLAMA_HOST "0.0.0.0"` |
+| Ollama nicht erreichbar | Mac Mini schläft / OLLAMA_HOST fehlt (z.B. nach Reboot, LaunchAgent nicht geladen) | Auf Mac Mini: `~/scripts/ollama-env.sh` ausführen; LaunchAgent siehe [mac-mini-m4.md](../../Hardware/mac-mini-m4.md) |
 | „Keine Quellen gefunden" | „Embedding und Retrieval umgehen" deaktiviert | In Admin → Websuche aktivieren |
 | Passwort vergessen | – | `docker volume rm open-webui-data` + Stack neu starten (löscht alle Daten) |
 | `docker compose` → „no config file" | Falsches Verzeichnis | Immer mit `-f ~/docker/ai-stack/docker-compose.yml` aufrufen |
