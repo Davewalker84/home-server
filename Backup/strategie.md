@@ -39,6 +39,13 @@ Der Rsync-Job sichert alle Daten vom UGREEN vollständig auf die Synology:
 | volume1 | Filme, Musik, Fotos, paperless-data |
 | volume2 | Docker-Containerdaten, Paperless-Stack |
 
+Die Macs sichern sich zusätzlich regelmäßig per **Time Machine** auf das UGREEN. Die Time-Machine-Freigabe liegt damit auch im wöchentlichen Rsync auf die Synology.
+
+| Quelle (Time Machine → UGREEN) | Inhalt |
+|---|---|
+| Mac Mini M4 (192.168.188.151) | macOS, Home-Ordner inkl. `~/docker/` (Compose-Datei, `.env`, SearXNG- und mcpo-Config), Ollama-Modelle – **Docker-Volumes nur eingeschränkt**, siehe [Bekannte Schwächen](#bekannte-schwächen) |
+| MacBook Pro | macOS, Home-Ordner |
+
 ---
 
 ## Backup-Zeitplan
@@ -81,6 +88,10 @@ Ein Backup ist nur so gut wie sein letzter erfolgreicher Restore-Test. Bisher wu
 **Portainer Stack-Definitionen nicht gesichert**
 Die docker-compose-Definitionen der Portainer-Stacks existieren nur in der Portainer-Datenbank auf volume2. Sie werden zwar mit volume2 gesichert, aber nicht separat als lesbare Dateien im Git-Repo versioniert.
 
+**Docker-Volumes auf dem Mac Mini (OrbStack) – Risiko akzeptiert**
+OrbStack legt alle Docker-Volumes in einer einzigen virtuellen Festplatte ab (`~/.orbstack/data/data.img`, bis 8 TB). Time Machine sichert diese Datei zwar, laut OrbStack schlägt die Wiederherstellung solcher Images aber oft fehl ([Issue #2046](https://github.com/orbstack/orbstack/issues/2046), [FAQ](https://orbstack.dev/docs/faq)). Betroffen ist vor allem das Volume `open-webui-data`: Chatverläufe, Benutzerkonten, Modelle, Tools und Valves (API-Keys).
+Das Risiko ist **bewusst akzeptiert**, weil sich der AI-Stack vollständig aus dem Repo wieder aufbauen lässt (siehe [Restore Mac Mini](#restore-mac-mini--ai-stack)). Verloren gingen nur Chatverläufe und Konten; die API-Keys lassen sich in den jeweiligen Dashboards neu erzeugen. Bind-Mounts im Home-Ordner (`~/docker/searxng`, `~/docker/mcpo`, `.env`) sind normale Dateien und werden von Time Machine zuverlässig gesichert.
+
 ---
 
 ## Empfehlungen
@@ -111,3 +122,10 @@ Im Falle eines vollständigen UGREEN-Ausfalls:
 7. Alle Services testen (DNS, HA, Paperless, Jellyfin)
 
 > **Hinweis:** Ohne exportierte Portainer Stack-Definitionen müssen alle Stacks manuell neu konfiguriert werden. Das ist der stärkste Grund, Stack-Definitionen im Git-Repo zu versionieren.
+
+### Restore Mac Mini / AI-Stack
+
+1. Mac Mini aus Time Machine wiederherstellen (oder neu aufsetzen). Ollama und LaunchAgent laut [Hardware/mac-mini-m4.md](../Hardware/mac-mini-m4.md).
+2. OrbStack installieren. Falls `open-webui-data` nicht wiederherstellbar ist, mit leerem Volume starten.
+3. `~/docker/ai-stack/docker-compose.yml`, `.env`, `~/docker/searxng/settings.yml` und `~/docker/mcpo/config.json` aus Time Machine zurückholen oder laut [ContainerStack/Readme/ai-stack.md](../ContainerStack/Readme/ai-stack.md) und [HolidayAgent/README.md](../HolidayAgent/README.md) neu anlegen → `docker compose up -d`.
+4. Bei leerem Volume in Open WebUI neu einrichten: Admin-Konto, Websuche, Paperless-Tool (ai-stack.md) sowie Urlaubsplaner-Schritte 2–6 (Claude-Verbindung, Tool + Valves, Modell, Familien-Accounts) laut [HolidayAgent/README.md](../HolidayAgent/README.md).

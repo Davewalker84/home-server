@@ -8,21 +8,9 @@ Ein Agent in Open WebUI (Mac Mini M4, `ai-stack`), der für die Familie Unterkü
 
 **Grundprinzip:** Die gesamte Suche läuft in **einem** Tool-Aufruf (`plan_search`) in Python. Das LLM führt nur den Dialog und erklärt das Ergebnis. Preise, Bewertungen und Links gehen nie durch das Modell, das sie verändern oder erfinden könnte. Das spart auch Tokens.
 
-```
-Familie (Browser, zu Hause oder über WireGuard)
-        ↓
-Open WebUI :3001 → Modell "Urlaubsplaner" (Claude Sonnet 5 + System-Prompt + Familienprofil)
-        ├── Tool "Urlaubsplaner – Unterkunftssuche" (HolidaySearchTool.py)
-        │     ├── plan_search       → alle Quellen parallel → Filter → Dubletten → Ranking → E-Laden → Tabelle
-        │     │     ├── SerpAPI Google Hotels + Google Ferienhäuser
-        │     │     ├── AirBnB  → HTTP → mcpo :8000 → @openbnb/mcp-server-airbnb
-        │     │     ├── Booking.com (optional, RapidAPI)
-        │     │     └── OpenStreetMap (Lage der Ziele, Ladestationen)
-        │     ├── geocode_places    → Sehenswürdigkeiten + günstigste Wohnlage (Stadtteil-Empfehlung)
-        │     ├── find_family_pois  → Umgebung (Spielplätze, Strand, Supermarkt, Parken, E-Laden …)
-        │     └── find_ev_chargers  → Ladestationen im Detail (Stecker, kW, Betreiber, Kosten)
-        └── Websuche → SearXNG (Regionstipps, Saison-Infos)
-```
+![Architektur Urlaubsplaner](Architektur.drawio.svg)
+
+> Quelle: [Architektur.drawio.svg](Architektur.drawio.svg). Bearbeiten in VS Code mit der Extension **Draw.io Integration** (`hediet.vscode-drawio`).
 
 | Quelle | Weg | Kosten | Liefert |
 |---|---|---|---|
