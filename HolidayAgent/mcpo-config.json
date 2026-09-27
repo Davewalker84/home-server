@@ -2,7 +2,7 @@
   "mcpServers": {
     "airbnb": {
       "command": "npx",
-      "args": ["-y", "@openbnb/mcp-server-airbnb", "--ignore-robots-txt"]
+      "args": ["-y", "@openbnb/mcp-server-airbnb@0.3.0", "--ignore-robots-txt"]
     }
   }
 }

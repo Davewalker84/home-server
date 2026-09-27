@@ -14,7 +14,7 @@ Open Web UI :3001 (Mac Mini M4)
         ├── SearXNG :8080 (intern, Mac Mini M4) → Google/Bing (anonym)
         ├── Tool: Paperless-NGX API → NAS :8000
         ├── Anthropic API (Claude, OpenAI-kompatibel) → Urlaubsplaner
-        └── mcpo :8000 (intern) → MCP-Server (AirBnB)
+        └── Tool: Urlaubsplaner → mcpo :8000 (intern) → MCP-Server (AirBnB)
 
 VS Code + Continue Extension
         └── Ollama API → Mac Mini M4 :11434
@@ -101,7 +101,8 @@ services:
     networks:
       - ai-net
 
-  # MCP → OpenAPI Proxy für Open WebUI (AirBnB-Suche des Urlaubsplaners)
+  # MCP → OpenAPI Proxy – wird vom Urlaubsplaner-Tool direkt per HTTP aufgerufen
+  # (nicht als Tool-Server in Open WebUI eintragen, siehe HolidayAgent/README.md)
   mcpo:
     image: ghcr.io/open-webui/mcpo:main
     container_name: mcpo
@@ -314,9 +315,11 @@ Statt einem eigenen RAG-Index in Paperless-AI nutzt Open Web UI ein **Tool**, da
 
 ## Urlaubsplaner (HolidayAgent)
 
-Agent für Unterkunftssuche und Urlaubstipps: Claude Sonnet 5 + Tool `HolidayAgent/HolidaySearchTool.py` + AirBnB-MCP über `mcpo`. Einrichtung, Ranking-Logik und Test-Checkliste: [HolidayAgent/README.md](../../HolidayAgent/README.md).
+Agent für Unterkunftssuche und Urlaubstipps: Claude Sonnet 5 + Tool `HolidayAgent/HolidaySearchTool.py`. Die Suche (Google Hotels, AirBnB über `mcpo`, optional Booking) läuft komplett im Tool (`plan_search`); das LLM führt nur den Dialog. Einrichtung, Ranking-Logik und Test-Checkliste: [HolidayAgent/README.md](../../HolidayAgent/README.md).
 
 > **Datenschutz:** Anders als beim Familien-Chat verlassen hier Chat-Inhalte das Haus (Anthropic, SerpAPI, RapidAPI, OpenStreetMap). Keine sensiblen Daten im Urlaubsplaner eingeben.
+
+> **Sicherheit:** Tools führen beliebigen Python-Code im Open-WebUI-Container aus. Das Recht „Workspace → Tools“ ist root-äquivalent und darf nur Admins haben – nicht der Familie-Gruppe.
 
 ---
 
