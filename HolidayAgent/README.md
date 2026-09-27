@@ -143,6 +143,24 @@ Alle übrigen Valves (Filter, Schwellen, Gewichte) haben sinnvolle Standardwerte
 
 Von unterwegs erreichbar über WireGuard → `http://192.168.188.151:3001`.
 
+### 7. Eigenes Reise-Wissen einbinden (optional)
+
+Nach dem ersten Urlaub kannst du ein Wissen mit bisherigen Hotels und Erfahrungen anlegen. Der Agent nutzt das dann, um schneller hilfreiche Vorschläge zu machen.
+
+1. **Datei vorbereiten:** Vorlage [Reise-Wissen-Vorlage.md](Reise-Wissen-Vorlage.md) öffnen, die Beispiel-Einträge durch eure bisherigen Reisen ersetzen (einfach neue `##`-Überschriften mit Ort + Datum oben hinzufügen).
+
+2. **In Open WebUI:**
+   - **Arbeitsbereich → Wissen → + Sammlung anlegen** → Name „Urlaubsplaner-Wissen"
+   - **Dateien hinzufügen** → die angepasste Datei hochladen
+   - Das Wissen ist jetzt verfügbar, sobald die Datei verarbeitet ist (kurz warten)
+
+3. **An das Modell „Urlaubsplaner" anhängen:**
+   - Modell bearbeiten → **Wissen hinzufügen** → „Urlaubsplaner-Wissen" auswählen
+   - **Modus:** „Full Context" (für wenige / kurze Dateien das Zuverlässigste; alles wird bei jeder Anfrage mitgegeben)
+   - Speichern
+
+4. **Nach einer neuen Reise:** Einfach einen neuen Eintrag am Anfang der Datei hinzufügen und die Datei in Open WebUI erneut hochladen (alte wird ersetzt). Der Agent wird dann beim nächsten Mal zum gleichen Ziel nach dieser Erfahrung fragen.
+
 ---
 
 ## Test-Checkliste
@@ -201,5 +219,5 @@ Von unterwegs erreichbar über WireGuard → `http://192.168.188.151:3001`.
 
 - [ ] Flugsuche (SerpAPI `google_flights`)
 - [ ] Lage nach ÖPNV-Fahrzeit statt Luftlinie
-- [ ] Merkliste pro Reise (Open-WebUI-Notizen/Wissen)
+- [x] Eigenes Reise-Wissen (Open-WebUI-Knowledge, Abschnitt 7)
 - [ ] Preisalarm per Home-Assistant-Benachrichtigung → dafür die Suchlogik als eigenen MCP-Server (FastMCP) hinter mcpo auslagern, damit Open WebUI und Home Assistant sie gemeinsam nutzen
