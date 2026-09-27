@@ -93,6 +93,7 @@ Keys **nicht** ins Repo – sie kommen in die `.env` auf dem Mac Mini bzw. in di
 |---|---|
 | URL | `https://api.anthropic.com/v1` |
 | Key | Anthropic API-Key |
+| API Typ | **Chat Completions** (nicht „Responses“ – Anthropic hat keinen `/v1/responses`-Endpoint → Fehler „Not Found“) |
 | Model IDs | `claude-sonnet-5` (optional `claude-haiku-4-5-20251001` zum Testen, siehe unten) |
 
 > **Einschränkung:** Anthropic beschreibt den OpenAI-kompatiblen Endpoint als *„primarily intended to test and compare model capabilities“*. Prompt-Caching und `strict` bei Tools werden nicht unterstützt ([Doku](https://platform.claude.com/docs/en/api/openai-sdk)). Tool-Calling funktioniert vollständig. Da `plan_search` nur 1–2 Tool-Runden braucht, ist der Kostennachteil ohne Caching gering. Falls Anthropic den Endpoint einschränkt: Umstieg auf eine native Anthropic-Anbindung (Open-WebUI-Pipe-Funktion oder LiteLLM).
