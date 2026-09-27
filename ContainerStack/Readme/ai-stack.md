@@ -12,7 +12,9 @@ Familie (Browser)
 Open Web UI :3001 (Mac Mini M4)
         ├── Ollama API → localhost:11434 (kein Netzwerk-Hop)
         ├── SearXNG :8080 (intern, Mac Mini M4) → Google/Bing (anonym)
-        └── Tool: Paperless-NGX API → NAS :8000
+        ├── Tool: Paperless-NGX API → NAS :8000
+        ├── Anthropic API (Claude, OpenAI-kompatibel) → Urlaubsplaner
+        └── mcpo :8000 (intern) → MCP-Server (AirBnB)
 
 VS Code + Continue Extension
         └── Ollama API → Mac Mini M4 :11434
@@ -49,7 +51,8 @@ Liegt unter `~/docker/ai-stack/docker-compose.yml`.
 ```yaml
 services:
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    # Version in .env pinnen (OPEN_WEBUI_TAG=vX.Y.Z), damit Tool-/MCP-Verhalten nicht unerwartet wechselt
+    image: ghcr.io/open-webui/open-webui:${OPEN_WEBUI_TAG:-main}
     container_name: open-webui
     restart: unless-stopped
     ports:
@@ -60,7 +63,8 @@ services:
       # Ollama läuft nativ auf demselben Mac Mini
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
 
-      # OpenAI deaktiviert
+      # Claude wird über Admin → Verbindungen angebunden (siehe HolidayAgent/README.md),
+      # diese Env-Werte gelten nur beim allerersten Start
       - OPENAI_API_BASE_URL=
       - OPENAI_API_KEY=
 
@@ -97,6 +101,17 @@ services:
     networks:
       - ai-net
 
+  # MCP → OpenAPI Proxy für Open WebUI (AirBnB-Suche des Urlaubsplaners)
+  mcpo:
+    image: ghcr.io/open-webui/mcpo:main
+    container_name: mcpo
+    restart: unless-stopped
+    volumes:
+      - /Users/davidmarotzke/docker/mcpo/config.json:/app/config/config.json:ro
+    command: ["--config", "/app/config/config.json", "--port", "8000", "--api-key", "${MCPO_API_KEY}"]
+    networks:
+      - ai-net
+
 volumes:
   open-webui-data:
     driver: local
@@ -104,6 +119,13 @@ volumes:
 networks:
   ai-net:
     driver: bridge
+```
+
+**`.env`** (liegt neben der Compose-Datei unter `~/docker/ai-stack/.env`, nicht im Repo):
+
+```bash
+OPEN_WEBUI_TAG=main        # auf aktuell laufende Version setzen, z.B. v0.x.y
+MCPO_API_KEY=<openssl rand -hex 24>
 ```
 
 > **Hinweis:** `host.docker.internal` wird von OrbStack auf macOS automatisch auf den Host gemappt – kein `extra_hosts` nötig (war Linux-spezifisch).
@@ -181,6 +203,7 @@ Nach dem ersten Start unter **Admin Panel → Einstellungen → Websuche**:
 | Dokument-RAG + Paperless-Chat | gemma4:26b-mlx (geklont) | – |
 | Paperless-AI (Auto-Tagging) | qwen2.5:7b (via Paperless-AI Stack) | – |
 | Neueres Qwen (Einsatzzweck offen, ~27B) | qwen3.8:27b-mlx | – |
+| Urlaubsplaner (Tools, Unterkunftssuche) | claude-sonnet-5 (Anthropic API) | – |
 
 Qwen3 Thinking Mode im System-Prompt deaktivieren:  
 `Admin Panel → Einstellungen → Allgemein → System-Prompt → /no_think`
@@ -286,6 +309,14 @@ Statt einem eigenen RAG-Index in Paperless-AI nutzt Open Web UI ein **Tool**, da
 | `content_head_chars` / `content_tail_chars` Valves | – | ✅ konfigurierbar |
 
 **Nutzen im Chat:** Tool über das Stecker-Icon aktivieren → Frage stellen z.B. *„Suche meine letzte Rechnung von IKEA"*
+
+---
+
+## Urlaubsplaner (HolidayAgent)
+
+Agent für Unterkunftssuche und Urlaubstipps: Claude Sonnet 5 + Tool `HolidayAgent/HolidaySearchTool.py` + AirBnB-MCP über `mcpo`. Einrichtung, Ranking-Logik und Test-Checkliste: [HolidayAgent/README.md](../../HolidayAgent/README.md).
+
+> **Datenschutz:** Anders als beim Familien-Chat verlassen hier Chat-Inhalte das Haus (Anthropic, SerpAPI, RapidAPI, OpenStreetMap). Keine sensiblen Daten im Urlaubsplaner eingeben.
 
 ---
 

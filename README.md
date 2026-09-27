@@ -23,8 +23,9 @@ Ziel: Nachvollziehbarkeit, schnelle Fehlersuche und sicherer Wiederaufbau.
 | Paperless-NGX | http://192.168.188.130:8000 | UGREEN DXP4800 | UGOS Docker |
 | AdGuard Home | http://192.168.188.130:8080 | UGREEN DXP4800 | Portainer Stack |
 | Jellyfin | http://192.168.188.130:8096 | UGREEN DXP4800 | Portainer Stack |
-| Open Web UI | http://192.168.188.130:3001 | UGREEN DXP4800 | Portainer Stack (ai-stack) |
-| SearXNG | http://192.168.188.130:8080 (intern) | UGREEN DXP4800 | Portainer Stack (ai-stack) |
+| Open Web UI | http://192.168.188.151:3001 | Mac Mini M4 | OrbStack (ai-stack) |
+| SearXNG | http://searxng:8080 (intern) | Mac Mini M4 | OrbStack (ai-stack) |
+| mcpo (MCP-Tools) | http://mcpo:8000 (intern) | Mac Mini M4 | OrbStack (ai-stack) |
 | Synology DSM | http://192.168.188.135:5000 | Synology DS218J | — |
 | FritzBox | http://192.168.188.1 | FRITZ!Box 5690 Pro | — |
 
