@@ -249,8 +249,10 @@ class Tools:
             return v.min_rating_airbnb_5, 5.0
         return v.min_rating_google_5, 5.0
 
-    def _geocode(self, place: str) -> dict | None:
-        key = self._cache_key("nominatim", place.lower())
+    def _geocode(self, place: str, country: str = "") -> dict | None:
+        # Mit Land, sonst wird z.B. "Römö" als Rom (Italien) aufgelöst
+        query = f"{place}, {country}" if country else place
+        key = self._cache_key("nominatim", query.lower())
         cached = self._cache_get(key)
         if cached is not None:
             return cached or None
@@ -261,7 +263,8 @@ class Tools:
             try:
                 resp = requests.get(
                     NOMINATIM_URL,
-                    params={"q": place, "format": "json", "limit": 1, "accept-language": self.valves.language},
+                    params={"q": query, "format": "json", "limit": 1, "addressdetails": 1,
+                            "accept-language": self.valves.language},
                     headers={"User-Agent": self.valves.nominatim_user_agent},
                     timeout=15,
                 )
@@ -278,6 +281,7 @@ class Tools:
             result = {
                 "name": place, "lat": float(h["lat"]), "lon": float(h["lon"]), "display": h["display_name"],
                 "osm_class": h.get("class", ""),
+                "country_code": (h.get("address") or {}).get("country_code", ""),
             }
             bb = h.get("boundingbox")  # [süd, nord, west, ost]
             if bb and len(bb) == 4:
@@ -723,6 +727,7 @@ class Tools:
         check_in: str,
         check_out: str,
         adults: int,
+        country: str = "",
         children_ages: str = "",
         budget_total: float = 0,
         sights: str = "",
@@ -739,6 +744,7 @@ class Tools:
         :param check_in: Anreisedatum im Format YYYY-MM-DD
         :param check_out: Abreisedatum im Format YYYY-MM-DD
         :param adults: Anzahl Erwachsene
+        :param country: Land des Ziels, z.B. "Dänemark" – PFLICHT, ohne Land werden Ortsnamen falsch aufgelöst (Römö → Rom). Bei Unklarheit den Nutzer fragen
         :param children_ages: Alter der Kinder kommagetrennt, z.B. "5,8" (leer wenn keine Kinder)
         :param budget_total: Budget für die Unterkunft für den gesamten Aufenthalt in EUR (0 = kein Limit)
         :param sights: geplante Sehenswürdigkeiten/Ziele getrennt durch Semikolon (leer = Lage neutral)
@@ -750,8 +756,16 @@ class Tools:
             nights = self._nights(check_in, check_out)
         except ValueError:
             return "Ungültiges Datum – bitte check_in/check_out im Format YYYY-MM-DD angeben."
+        country = (country or "").strip()
+        if not country:
+            return (
+                f"Land fehlt: In welchem Land liegt „{destination}“? Ohne Land werden Ortsnamen von den Portalen "
+                "falsch aufgelöst (z.B. Römö → Rom). Bitte das Land klären und `plan_search` mit `country` erneut aufrufen."
+            )
         ages = self._ages(children_ages)
         min_bedrooms = v.min_bedrooms_with_children if ages else 0
+        place = destination  # Anzeigename
+        destination = f"{destination}, {country}"  # eindeutige Suchanfrage für alle Quellen
         await self._status(__event_emitter__, f"Suche Unterkünfte in {destination} ({nights} Nächte) …")
 
         jobs, status = {}, {}
@@ -769,7 +783,7 @@ class Tools:
         if v.rapidapi_key:
             jobs[SRC_BOOKING] = asyncio.to_thread(self._booking, destination, check_in, check_out, adults, ages)
         geo_job = asyncio.to_thread(self._geocode_many, sights, destination) if sights else None
-        center_job = asyncio.to_thread(self._geocode, destination) if v.max_distance_km else None
+        center_job = asyncio.to_thread(self._geocode, place, country) if v.max_distance_km else None
 
         extra = [j for j in (geo_job, center_job) if j]
         results = await asyncio.gather(*jobs.values(), *extra, return_exceptions=True)
@@ -783,22 +797,22 @@ class Tools:
         if center and center.get("osm_class") in ("natural", "water", "waterway"):
             center, radius_note = None, "Umkreisfilter aus (Zielort ist ein Gewässer/eine Naturfläche)"
 
+        radius = max(v.max_distance_km, center.get("radius_km", 0)) if center else 0
         listings = []
         for source, res in zip(jobs.keys(), results):
             if isinstance(res, Exception):
                 logger.error("%s failed: %s", source, res)
                 status[source] = f"Fehler: {str(res)[:120]}"
-            else:
-                status[source] = f"{len(res)} Treffer"
-                listings.extend(res)
-
-        if center:
-            radius = max(v.max_distance_km, center.get("radius_km", 0))
-            with_coords = [l for l in listings if l.get("lat") is not None and l.get("lon") is not None]
-            if with_coords and all(
+                continue
+            # Liegt kein einziger Treffer im Umkreis, hat das Portal den Ort falsch aufgelöst (z.B. anderes Land)
+            with_coords = [l for l in res if l.get("lat") is not None and l.get("lon") is not None]
+            if center and with_coords and all(
                 self._haversine_km(center["lat"], center["lon"], l["lat"], l["lon"]) > radius for l in with_coords
             ):
-                center, radius_note = None, "Umkreisfilter aus (Zielort zu unscharf – alle Treffer lägen außerhalb)"
+                status[source] = f"verworfen: {len(res)} Treffer, alle > {radius:.0f} km von {place} (Ort falsch aufgelöst?)"
+                continue
+            status[source] = f"{len(res)} Treffer"
+            listings.extend(res)
 
         await self._status(__event_emitter__, f"Bewerte {len(listings)} Unterkünfte …")
         ranked, dropped = self._rank(listings, budget_total, sight_hits, has_children=bool(ages), center=center)

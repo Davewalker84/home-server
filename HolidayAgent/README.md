@@ -182,7 +182,8 @@ Nach dem ersten Urlaub kannst du ein Wissen mit bisherigen Hotels und Erfahrunge
 5. `serpapi_key` in den Valves leeren → Agent antwortet mit AirBnB (+ Booking) und nennt den Ausfall.
 6. Mit einem Familien-Account einloggen → Urlaubsplaner nutzbar, kein Zugriff auf Arbeitsbereich/Tools/Valves.
 7. Nach einer Woche Verbrauch in SerpAPI- und Anthropic-Dashboard prüfen.
-8. Optional: dasselbe Szenario mit `claude-haiku-4-5-20251001` bzw. einem lokalen Modell (z.B. `qwen3:14b`) als Basismodell. Da die Logik im Tool steckt, reicht evtl. ein kleineres Modell; Qualität der Tipps und Dialogführung vergleichen.
+8. **Ortsnamen mit Land:** *„Römö in Dänemark, 12.–19.10.2026, 2 Erwachsene“* → Treffer liegen auf Rømø (Dänemark), keine aus Rom. Ohne Landesangabe fragt der Agent nach dem Land. Zur Kontrolle direkt gegen mcpo: `"location":"Römö, Dänemark"` muss Koordinaten um 55,1 N / 8,5 O liefern.
+9. Optional: dasselbe Szenario mit `claude-haiku-4-5-20251001` bzw. einem lokalen Modell (z.B. `qwen3:14b`) als Basismodell. Da die Logik im Tool steckt, reicht evtl. ein kleineres Modell; Qualität der Tipps und Dialogführung vergleichen.
 
 ---
 
@@ -210,6 +211,7 @@ Nach dem ersten Urlaub kannst du ein Wissen mit bisherigen Hotels und Erfahrunge
 | Booking-Links | Die API liefert keine direkte Hotel-URL → Link öffnet die Booking-Suche nach dem Hotelnamen mit Reisedaten |
 | Lage | Luftlinie, keine ÖPNV-Fahrzeit. Bei weit verteilten Zielen weist `geocode_places` darauf hin |
 | AirBnB-Suchgebiet | Der AirBnB-Server vergrößert das Suchgebiet stark (bei „Lissabon“ bis ca. 100 km). Der Umkreisfilter fängt das ab; Orte innerhalb von 15 km (z.B. Costa da Caparica) bleiben drin und werden nur über die Lage-Bewertung abgestuft, wenn Sehenswürdigkeiten angegeben sind |
+| Ortsnamen / Land | `plan_search` verlangt das Land (`country`) und hängt es an jede Suchanfrage („Römö, Dänemark“). Ohne Land werden Ortsnamen falsch aufgelöst (Römö → Rom). Liegt kein Treffer einer Quelle im Umkreis des Zielorts (OSM-Geocoding), wird die Quelle verworfen und in der „Quellen“-Zeile als „verworfen“ angezeigt |
 | Deep-Links | Fewo-direkt, HomeToGo und Interhome übernehmen nicht immer alle Filter |
 | E-Ladestationen | OSM-Daten sind in DE/EU gut, aber nicht vollständig. Die Ladeleistung ist oft nicht erfasst („Stecker unbekannt“), Hotel-Wallboxen fehlen häufig, keine Live-Belegung |
 | Overpass | Öffentliche Server sind zeitweise überlastet (504). Das Tool probiert automatisch drei Server; schlägt alles fehl, steht „unbekannt“ in der Spalte |
